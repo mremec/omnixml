@@ -1,0 +1,44 @@
+{ $OmniXML: OmniXML/dpk/OmniXML_d7.dpk,v 1.2 2009/03/02 09:03:18 mremec Exp $ }
+
+package OmniXML_d7;
+
+{$R *.RES}
+{$ALIGN ON}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS ON}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'OmniXML'}
+{$RUNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  vcl;
+
+contains
+  OmniXML in '..\OmniXML.pas',
+  GpTextStream in '..\GpTextStream.pas',
+  OmniXML_LookupTables in '..\OmniXML_LookupTables.pas',
+  GpStreamWrapper in '..\GpStreamWrapper.pas',
+  OmniXMLPersistent in '..\OmniXMLPersistent.pas',
+  OmniXMLProperties in '..\OmniXMLProperties.pas',
+  OmniXMLUtils in '..\OmniXMLUtils.pas';
+
+end.
+

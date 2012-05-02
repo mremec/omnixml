@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN"
+           "http://my.netscape.com/publish/formats/rss-0.91.dtd">
+
+<rss version="0.91">
+
+  <channel>
+
+    <title>OpenBSD Journal</title>
+    <link>http://www.deadly.org</link>
+    <description>The OpenBSD Community.</description>
+    <language>en-us</language>
+
+    <image>
+      <title>OpenBSD Journal</title>
+      <url>http://www.deadly.org/images/obsd88x31.png</url>
+      <link>http://www.deadly.org/</link>
+      <width>88</width>
+      <height>31</height>
+      <description>The OpenBSD Community.</description>
+    </image>
+
+    <item>
+      <title>Slovenian user's list</title>
+      <link>http://www.deadly.org/article.php3?sid=20031201093827</link>
+      <description><![CDATA[ I saw this while flipping through the mail archives. Gregor Jeromen has set up an OpenBSD user's list for Slovenian users. The site is hosted at  <a href="http://obsd.17slon.org/mailinglist.php">http://obsd.17slon.org/mailinglist.php</a> and includes archives and a web based subscription form. This looks like yet another useful community site. Resources in peoples' primary languages are always more useful than asking them to translate on their own. Sites like these also indicate a reasonable amount of interest in a project.       <p>Posted by jose at 2003-12-01 09:38:27</p>      
+]]></description>
+    </item>
+
+    <item>
+      <title>gcc 3.3.2 imported into CURRENT</title>
+      <link>http://www.deadly.org/article.php3?sid=20031130095321</link>
+      <description><![CDATA[ <a href="mailto:">SH</a> writes:<i> "OpenBSD is updating the compiler, as can been seen from CVS : <br>
+<a href="http://archives.neohapsis.com/archives/openbsd/cvs/2003-11/0697.html">CVS archive</a>
+<p>
+It was my impression that the OpenBSD developers was none to happy with newer gcc than 2.95 due to slow compile times."</i>
+<p>
+This may make upgrading interesting ...       <p>Posted by jose at 2003-11-30 09:53:21</p>      
+]]></description>
+    </item>
+
+    <item>
+      <title>Status on USB 2.0?</title>
+      <link>http://www.deadly.org/article.php3?sid=20031130095143</link>
+      <description><![CDATA[ <a href="mailto:wanded@breathemail.net">sarge</a> writes:<i> "What is the current status on USB 2.0? I am using OpenBSD 3.4 GENERIC#18 i38. I see from <a href="http://www.openbsd.org/want.html">http://www.openbsd.org/want.html</a> they are seeking 2.0 devices. I have an IBM thinkpad x24 which has USB 1.1 on the motherboard. When I connect a USB 2.0 device to the 1.1 USB port on the x24, I get 
+<pre>
+umass_scsi_cb: status cmd failed for scsi op 0x00
+</pre>
+for a USB 2.0 memory device and my apple ipod 3rd generation. If I use an IBM PCMCIA USB 2.0 card, there is no function configured for the 2 USB ports on the PCMCIA dongle, from dmesg.
+<p>
+It would seem there is no USB 2.0 support for 3.4. If I go to an ftp site, snapshots/i386, the latest version is 11/01/2003. Can we help in testing USB 2.0? It seems to have been talked about over the last year and a half or so.
+<p>
+The ehci driver in the linux kernel 2.4.22 works a treat on the hardware listed above."</i>
+<p>
+USB 2.0 would be nice to have working ...        <p>Posted by jose at 2003-11-30 09:51:43</p>      
+]]></description>
+    </item>
+
+    <item>
+      <title>OWASP Top Ten for PHP</title>
+      <link>http://www.deadly.org/article.php3?sid=20031129043914</link>
+      <description><![CDATA[ <a href="http://www.phpconsulting.com">ubiquitin</a> writes:<i> "<a href="http://www.sklar.com">David Sklar</a> has adapted the <a href="http://www.owasp.org">Open Web Application Security Project</a> to <a href="http://www.sklar.com/page/article/owasp-top-ten">PHP</a>.  Nothing earth-shattering, but a solid review of safeguarding web apps."</i>
+<p>
+This does look useful if you're doing PHP development, on OpenBSD or any platform.        <p>Posted by jose at 2003-11-29 04:39:14</p>      
+]]></description>
+    </item>
+
+    <item>
+      <title>OpenBSD under Bochs?</title>
+      <link>http://www.deadly.org/article.php3?sid=20031126140807</link>
+      <description><![CDATA[ <a href="mailto:nobody@example.net">george</a> writes :<i> "Has anybody tried to run OpenBSD under Bochs?  I run Bochs from Windows and then I try to install OpenBSD on Bochs.  How ever, when I try to press any key (namely ``i'' to start the install, I get muliple keystrokes instead).<p>
+
+Searching the net I found out <a href="http://mail.gnu.org/archive/html/bug-autoconf/2002-06/msg00000.html">http://mail.gnu.org/archive/html/bug-autoconf/2002-06/msg00000.html</a>
+ but nobody answered to that guy."</i>
+<p>
+I haven't used Bochs in eons, but it would be nice to have OpenBSD working under it.       <p>Posted by jose at 2003-11-26 14:08:07</p>      
+]]></description>
+    </item>
+
+  </channel>
+</rss>

@@ -1,0 +1,663 @@
+2011-09-01 08:19  mremec
+
+	* OmniXMLXPath.pas: * OmniXMLXPath.pas: Added support for the '..'
+	  element. (gp)
+
+2010-07-21 07:46  mremec
+
+	* OmniXMLXPath.pas: Added support for predicates [node] and
+	  [node='value'].
+
+2010-07-21 07:45  mremec
+
+	* OmniXMLUtils.pas: Overloaded SelectNode.  GetNodeText works when
+	  nil is passed as the 'parentNode' parameter.	(ia) Added handling
+	  of boolean strings 'true' and 'false'.
+
+2010-01-26 09:25  mremec
+
+	* OmniXMLProperties.pas: TGpXMLDoc.LoadFromString can be passed an
+	  empty string.
+
+2010-01-02 16:24  mremec
+
+	* OmniXML.pas: Detect unclosed start element.
+
+2009-12-25 17:58  mremec
+
+	* OmniXMLUtils.pas: Base64 code optimization.  Overloaded
+	  Base64Encode, Base64Decode to work with buffer.
+
+2009-09-15 10:48  mremec
+
+	* dpk/define_libsuffix.inc: Added VER210 to support Delphi 2010.
+
+2009-07-16 10:07  mremec
+
+	* OmniXMLProperties.pas: If TGpXMLDoc.LoadFromString failed,
+	  internal XML document got corrupted.
+
+2009-04-02 17:19  mremec
+
+	* OmniXMLUtils.pas: Use XmlString instead of WideString, XmlChar
+	  instead of WideChar to get better code compatibility between
+	  different Delphi versions.
+
+2009-03-02 09:03  mremec
+
+	* dpk/: OmniXML_d2005.dpk, OmniXML_d5.dpk, OmniXML_d6.dpk,
+	  OmniXML_d7.dpk: GpMemStr is not used anymore in OmniXML.
+
+2009-02-07 14:46  mremec
+
+	* OmniXMLUtils.pas: Delphi 2009 compatibility fix.
+
+2008-10-16 13:35  mremec
+
+	* dpk/: OmniXMLCore.dpk, OmniXMLCore.res: Added OmniXML_Types.
+	  Removed GpMemStr.
+
+2008-10-16 13:33  mremec
+
+	* dpk/define_libsuffix.inc: Added VER200 to support Delphi 2009.
+
+2008-10-10 18:02  mremec
+
+	* OmniXML.pas: Added W3C DOM Level 2 error codes.  Fail to load
+	  document without top level element.
+
+2008-10-05 08:29  mremec
+
+	* extras/readme.txt: * Updated URL for JEDI Win32 API library.
+
+2008-10-05 08:28  mremec
+
+	* extras/: DSiWin32.pas, GpSync.pas: Sync to latest version.
+
+2008-09-15 13:25  mremec
+
+	* demo/Storage/Storage.dproj: Initial import.
+
+2008-09-15 13:22  mremec
+
+	* demo/Storage/main.pas: Added new data types introduced in Delphi
+	  2009.
+
+2008-09-15 13:19  mremec
+
+	* OmniXMLPersistent.pas: Delphi 2009 compatibility fixes.
+
+2008-09-15 13:11  mremec
+
+	* OmniXMLPersistent.pas: Fixed writing/reading Char type
+	  properties.
+
+2008-09-12 14:55  mremec
+
+	* OmniXMLPersistent.pas: Use types from OmniXML_Types.	Do explicit
+	  typecast to avoid warning on D2009.
+
+2008-09-12 11:25  mremec
+
+	* OmniXML.inc, OmniXML.pas, OmniXML_Dictionary.pas: Merged
+	  UnicodeAware into HEAD.
+
+2008-09-02 09:54  mremec
+
+	* OmniXMLUtils.pas: Avoid warning on latest Delphi.
+
+2008-08-31 18:53  mremec
+
+	* OmniXML_Dictionary.pas: Use types from OmniXML_Types.  Under
+	  compiler with Unicode support there's no need to call conversion
+	  functions.
+
+2008-08-31 16:59  mremec
+
+	* OmniXML.pas: Moved custom types to OmniXML_Types unit.
+
+2008-08-31 15:32  mremec
+
+	* OmniXML.inc: Changed way to detect Delphi with Unicode support.
+
+2008-08-31 15:28  mremec
+
+	* OmniXML_Types.pas: Initial import.
+
+2008-08-17 19:34  mremec
+
+	* OmniXML_Dictionary.pas: Save method removed because dictionary
+	  cannot be persistent.
+
+2008-07-27 20:56  mremec
+
+	* OmniXML.pas: + Introduced new "proxy" types (XmlString and
+	  XmlChar) to switch easy between WideString and Unicode string
+	  types.  * Changed code to use new types.
+
+2008-07-27 20:39  mremec
+
+	* OmniXML.inc: * Use WideString on linux platform.
+
+2008-07-27 20:33  mremec
+
+	* OmniXML.inc: + OmniXML_Unicode compiler define to switch between
+	  Unicode string and WideString.  + OmniXML_WantWideString to
+	  override OmniXML_Unicode define and use WideString always.
+
+2008-07-01 13:10  mremec
+
+	* OmniXML_Dictionary.pas: * Use UTF8String type for UTF-8 encoded
+	  text.
+
+2008-07-01 13:06  mremec
+
+	* OmniXML.pas: * Pos function requires parameters of same types.
+
+2008-06-29 16:53  mremec
+
+	* extras/GpSharedMemory.pas, extras/GpSync.pas, GpTextStream.pas:
+	  Sync to latest version.
+
+2008-06-29 16:50  mremec
+
+	* GpStreamWrapper.pas: Sync to latest version.
+
+2008-06-29 16:47  mremec
+
+	* GpMemStr.pas, OmniXMLUtils.pas: GpMemStr is not used anywhere.
+
+2008-06-29 16:05  mremec
+
+	* OmniXML.pas: Code reformatted.
+
+2008-06-29 15:27  mremec
+
+	* OmniXML.pas: Code reformatted.
+
+2008-06-29 14:36  mremec
+
+	* OmniXML_JEDI.inc: Sync with JEDI.inc v1.101 build 2725.
+
+2008-04-21 14:36  mremec
+
+	* OmniXMLUtils.pas: Implemented enumerator XMLEnumNodes.
+
+2008-02-15 08:22  mremec
+
+	* OmniXMLXPath.pas: Deleted reference to (not used) StrUtils unit.
+
+2008-01-20 21:18  mremec
+
+	* OmniXML_Dictionary.pas: Delphi 7 compatibility fix.
+
+2008-01-11 07:58  mremec
+
+	* OmniXMLXPath.pas: ! Parser was calling 8-bit versions of Pos and
+	  PosEx. Fixed PosEx to accept 16-bit parameters and added 16-bit
+	  version of Pos. (gp)
+
+2007-10-09 15:44  mremec
+
+	* OmniXML.pas: Fixed bug in FindCharReference (thanks to Andrej
+	  Završnik for bug report and fix).
+
+2007-07-12 13:54  mremec
+
+	* OmniXML.pas: Fixed node type in IXMLDocumentType (reported by
+	  qrbn).
+
+2007-07-02 09:50  mremec
+
+	* dpk/OmniXMLCore.dpk: Added dictionary to store tag names,
+	  attribute names and attribute values.
+
+2007-07-02 09:27  mremec
+
+	* OmniXML.pas, OmniXML_Dictionary.pas: Added dictionary to store
+	  tag names, attribute names and attribute values.
+
+2007-02-11 21:53  mremec
+
+	* demo/Storage/: Storage.bdsproj, main.pas: Updated demo program
+	  now includes WideString and WideChar properties.
+
+2007-02-11 20:58  mremec
+
+	* OmniXMLPersistent.pas: Fixed a bug with objects whose properties
+	  aren't stored (contribution by John).
+
+2007-02-11 20:44  mremec
+
+	* OmniXMLPersistent.pas: Visual changes.
+
+2007-02-11 20:38  mremec
+
+	* OmniXMLPersistent.pas: WideChar support.
+
+2007-02-11 19:54  mremec
+
+	* OmniXMLPersistent.pas: Checked in support for WideStrings
+	  (contribution by John).  Private functions in TOmniXMLReader are
+	  now declared as protected.
+
+2007-02-11 19:16  mremec
+
+	* OmniXMLConf.pas: Check if root node of xml indeed is a config
+	  file. If it's not then recreate it with conf as default root
+	  element.  Config file now opens xml via stream and holds file
+	  open this puts a lot less stress on computers with slower
+	  processors and it also gets rid of EFCreateError... file already
+	  used by another process if those computers are using antivirus
+	  software.
+
+2007-01-10 08:44  mremec
+
+	* OmniXMLUtils.pas: Added two additional overloads for Base64Encode
+	  and one for Base64Decode.
+
+2006-12-06 13:31  mremec
+
+	* OmniXML.pas: ! Maintain list to detect unclosed element nodes.
+
+2006-08-02 19:41  mremec
+
+	* OmniXML.pas: Optimized GetPreviousSibling and GetNextSibling
+	  functions.
+
+2006-07-06 14:42  mremec
+
+	* demo/: BioLife/BioLife.bdsproj, ErrorInfo/ErrorInfo.bdsproj,
+	  FileList/FileList.bdsproj, MemTest/MemTest.bdsproj,
+	  Properties/RSSReader.bdsproj, Storage/Storage.bdsproj,
+	  XPath/XPathDemo.bdsproj, Xtreme/Xtreme.bdsproj,
+	  xmlFormatter/xmlFormatter.bdsproj: Removed GenerateDocumentation
+	  compiler command.
+
+2006-07-06 14:38  mremec
+
+	* demo/Storage/main.pas: Updated demo to include readonly property
+	  of class type.
+
+2006-07-06 14:36  mremec
+
+	* OmniXMLPersistent.pas: Added support for saving properties of
+	  class type that do not have implemented setter (modification
+	  contributed by Primoz Gabrijelcic).
+
+2006-07-04 13:22  mremec
+
+	* OmniXML.pas: Bugfix in InsertBefore. If NewChild had same parent
+	  as RefChild, insertion point could get invalid.
+
+2006-06-21 08:44  mremec
+
+	* OmniXMLUtils.pas: Added FindNodeByAttr.  InternalFindNode: Use
+	  case insensitive compare.  XMLDateTimeToStr: return date part for
+	  any value.
+
+2006-06-20 14:59  mremec
+
+	* OmniXML.pas: Fixed AV in InsertBefore if two parameters (NewChild
+	  and RefChild) were same.
+
+2006-05-11 21:30  mremec
+
+	* OmniXMLXPath.pas: ! For readability, whitespace may be used in
+	  expressions.
+
+2006-02-15 18:36  mremec
+
+	* OmniXML_MSXML.pas: Added missing (proxy) type IXMLNamedNodeMap.
+
+2006-02-15 17:53  mremec
+
+	* OmniXML.pas: Memory optimization: NodeName is calculated and
+	  returned dynamically.
+
+2006-02-14 15:49  mremec
+
+	* OmniXML_MSXML.pas: Added missing (proxy) constants.
+
+2006-02-14 15:47  mremec
+
+	* OmniXML.inc: Copied DELPHI6_UP from OmniXML_JEDI.inc.
+
+2006-02-14 15:45  mremec
+
+	* OmniXML_JEDI.inc: Sync with JEDI.inc v1.96.1
+
+2006-02-02 13:16  mremec
+
+	* OmniXMLXPath.pas, demo/XPath/XPathDemo1.dfm,
+	  demo/XPath/XPathDemo1.pas: Fixed bug in nested query processing.
+	  Added support for parameters in double quotes.  Added support for
+	  the '.' element.  Updated demo.
+
+2006-01-29 17:43  mremec
+
+	* OmniXMLDatabase.pas: Use InheritsFrom for better compatibility.
+
+2005-12-07 22:33  mremec
+
+	* demo/Properties/rrRSS.pas: Removed extra code to compile demo
+	  without errors again.
+
+2005-12-01 20:12  mremec
+
+	* dpk/define_libsuffix.inc: Added VER180 to support Delphi 2006.
+
+2005-12-01 19:27  mremec
+
+	* OmniXML_LookupTables.pas: Removed reference to unused unit.
+
+2005-11-14 08:00  mremec
+
+	* GpStreamWrapper.pas, GpTextStream.pas: Moved compiler directives
+	  in unit block to allow compiler to interpret System unit and
+	  recognize RTLVersion constant later.
+
+2005-11-08 08:00  mremec
+
+	* demo/Properties/rrRSS.pas: Included modifications by M. Vrhovnik.
+
+2005-11-08 07:59  mremec
+
+	* OmniXMLProperties.pas: Added WideString functions:
+	  GetXMLPropCDataWide, SetXMLPropCDataWide,
+	  GetXMLPropCDataOrTextWide, GetXMLPropCDataOrText (by M.
+	  Vrhovnik).
+
+2005-11-08 07:58  mremec
+
+	* OmniXMLConf.pas: Rewritten class constructor and thus fixed
+	  possiblity of getting exception because  FxmlRoot = nil (by M.
+	  Vrhovnik)
+
+2005-11-08 07:56  mremec
+
+	* dpk/: OmniXML.dpk, OmniXML.res, OmniXMLCore.dpk, OmniXMLCore.res,
+	  OmniXML_d2005.cfg, OmniXML_d2005.dpk: - Removed OmniXML.dpk
+	  because of name matching with main unit.  + Added
+	  OmniXMLCore.dpk.  - Removed non-CVS file .cfg.
+
+2005-11-03 12:33  mremec
+
+	* OmniXMLXPath.pas: Passing IXMLDocument to the XPathSelect with
+	  absolute expression (starting in '/') resulted in wrong output.
+
+2005-11-02 13:57  mremec
+
+	* OmniXML.pas: Fixed bug in Reference2Char function (thanks to
+	  Michael Reetz for pointing it out and providing fix).
+
+2005-11-02 12:55  mremec
+
+	* demo/: BioLife/BioLife.bdsproj, BioLife/BioLife.res,
+	  ErrorInfo/ErrorInfo.bdsproj, ErrorInfo/ErrorInfo.res,
+	  FileList/FileList.bdsproj, FileList/FileList.res,
+	  MemTest/MemTest.bdsproj, MemTest/MemTest.res, MemTest/main.dfm,
+	  MemTest/main.pas, Properties/RSSReader.bdsproj,
+	  Properties/RSSReader.res, Storage/Storage.bdsproj,
+	  Storage/Storage.res, Xtreme/Xtreme.bdsproj, Xtreme/Xtreme.res,
+	  xmlFormatter/xmlFormatter.bdsproj, xmlFormatter/xmlFormatter.res:
+	  Added .bdsproj and .res files.  Fixed minor bugs in demo
+	  programs.
+
+2005-11-02 12:33  mremec
+
+	* OmniXML.pas, OmniXMLXPath.pas, demo/XPath/XPathDemo.bdsproj,
+	  demo/XPath/XPathDemo.dpr, demo/XPath/XPathDemo.res,
+	  demo/XPath/XPathDemo1.dfm, demo/XPath/XPathDemo1.pas: Included
+	  XPath (basic) support and demo.  SelectNodes and SelectSingleNode
+	  now use new XPath engine.
+
+2005-10-29 08:46  mremec
+
+	* OmniXMLPersistent.pas, demo/Storage/main.pas: Checked in support
+	  for WideStrings (contribution by John).  Changed
+	  TOmniXMLWriter.Write from procedure to function. Now is returning
+	  Element: IXMLElement.  Minor visual modifications.
+
+2005-08-03 20:40  mremec
+
+	* GpStreamWrapper.pas, GpTextStream.pas: Switched to alternative
+	  code to detect Delphi version.
+
+2005-08-03 20:12  mremec
+
+	* OmniXML.pas: Bugfix: LoadFromStream set ParseError.Reason
+	  property to non-formatted text.
+
+2005-07-14 07:52  mremec
+
+	* OmniXML.pas: Bugfix: handle CDATA end delimiter properly when
+	  content ends with ']' character.
+
+2005-07-06 21:07  mremec
+
+	* OmniXML.pas: Changes in TXMLNode.AppendChild function: - document
+	  that created NewChild and this node should be same, - NewChild is
+	  first removed if it is already in the tree.
+
+2005-07-06 19:51  mremec
+
+	* OmniXML.pas: NewChild is reparented only with Insert (AppendChild
+	  already changes parent).
+
+2005-07-06 19:46  mremec
+
+	* OmniXML.pas: Changes in TXMLNode.InsertBefore function: -
+	  document that created NewChild and this node should be same, -
+	  check on RefChild is now made earlier (before any changes), -
+	  NewChild is first removed if it is already in the tree, - new
+	  ParentNode is set for NewChild after moving.
+
+2005-07-06 19:14  mremec
+
+	* OmniXML.pas: Assign NodeValue only for certain types.
+
+2005-06-02 12:43  mremec
+
+	* dpk/: define_libsuffix.inc, OmniXML.dpk, OmniXML.res,
+	  OmniXMLPkg.dpk, OmniXMLPkg.res: Slightly renamed package name.
+
+2005-06-02 10:21  mremec
+
+	* OmniXML.inc: Added more generic checking for compiler define.
+
+2005-06-02 10:17  mremec
+
+	* dpk/: OmniXMLPkg.dpk, OmniXMLPkg.res, define_libsuffix.inc:
+	  Introduced new package naming convention.
+
+2005-04-25 07:25  mremec
+
+	* OmniXMLConf.pas: - added property SaveAfterChange if this
+	  property is True, then document is saved after each change -
+	  procedure SaveConfig is now public so you can force document
+	  change - added function Read / Write WideString
+
+2005-02-28 07:57  mremec
+
+	* OmniXML.pas: ChildNodes and Attributes are created only when
+	  needed. This results in much lower memory usage for almost any
+	  document.
+
+2005-02-08 16:35  mremec
+
+	* OmniXML.pas: Replaced all WideFormat calls with basic string
+	  concatenation. (thanks again to Tomasz Maszkowski)   (reason:
+	  WideFormat has bug under D7 as reported in
+	  http://qc.borland.com/wc/qcmain.aspx?d=4703)
+
+2005-02-04 14:06  mremec
+
+	* OmniXML.pas: Use WideFormat when compiling with D6+ to keep
+	  unicode information. For earlier versions call will be routed to
+	  Format. (reported by Tomasz Maszkowski).
+
+2005-02-01 12:12  mremec
+
+	* OmniXML_MSXML.pas: Changed DELPHI_6_UP to DELPHI6_UP (sync with
+	  define from OmniXML_JEDI.inc).
+
+2004-11-23 22:11  mr
+
+	* GpStreamWrapper.pas, GpTextStream.pas, dpk/OmniXML_d2005.bdsproj,
+	  dpk/OmniXML_d2005.cfg, dpk/OmniXML_d2005.dpk,
+	  dpk/OmniXML_d2005.res: Modifications needed to support Delphi
+	  2005.
+
+2004-10-25 10:35  mr
+
+	* OmniXML_JEDI.inc: Updated with latest JEDI.inc file.
+
+2004-08-13 09:29  gp
+
+	* OmniXMLProperties.pas: Added WideString accessors
+	  GetXMLAttrPropWide, GetXMLPropWide, SetXMLAttrPropWide, and
+	  SetXMLPropWide to the TGpXMLData class.
+
+2004-08-12 19:06  gp
+
+	* OmniXMLUtils.pas: Updated GetNodeText to handle a case when #text
+	  subnode doesn't exist.
+
+2004-06-23 11:24  mr
+
+	* OmniXMLPersistent.pas, OmniXMLProperties.pas, OmniXMLUtils.pas,
+	  OmniXML_JEDI.inc: Replaced OmniXML_JEDI.inc with latest version.
+	  Updated some IFDEFs to more general forms.
+
+2004-06-23 10:50  mr
+
+	* demo/FileList/main.pas: Minor bug fix in FileList demo.
+
+2004-06-23 10:25  mr
+
+	* demo/: BioLife/BioLife.res, BioLife/blMain.ddp,
+	  ErrorInfo/ErrorInfo.res, ErrorInfo/main.ddp,
+	  FileList/FileList.res, FileList/main.ddp, MemTest/MemTest.res,
+	  MemTest/main.ddp, Properties/RSSReader.res, Storage/Storage.res,
+	  Storage/main.ddp, Xtreme/Xtreme.res, Xtreme/main.ddp,
+	  xmlFormatter/xmlFormatter.res: Removed *.res and *.ddp files from
+	  demos folder.
+
+2004-06-19 06:27  mr
+
+	* OmniXML.pas, demo/Storage/main.pas: Two additional characters, ("
+	  and ') are now encoded when saving document to file.
+
+2004-06-07 13:41  gp
+
+	* extras/: DSiWin32.pas, GpSecurity.pas, GpSharedMemory.pas,
+	  GpSync.pas, readme.txt: Added OmniXMLShared dependencies.
+
+2004-06-07 13:06  mr
+
+	* OmniXMLShared.pas, extras/OmniXMLShared.pas: Moved
+	  OmniXMLShared.pas to extras subdirectory.
+
+2004-05-24 17:00  mr
+
+	* OmniXMLPersistent.pas: Fixed two bugs that caused improperly
+	  saving strings with special characters (& etc.) (reported by
+	  Maurizuki).
+
+2004-05-24 14:03  mr
+
+	* OmniXMLPersistent.pas: Fixed bug in ReadStrings procedure
+	  (reported by Andrey Petrakiy).
+
+2004-05-12 20:22  gp
+
+	* GpTextStream.pas: Commented last change.
+
+2004-04-28 09:35  mr
+
+	* GpTextStream.pas, OmniXML.pas: Added Turkish Alphabet
+	  (ISO_8859_9) on the list of known code pages.
+
+2004-04-22 00:02  mr
+
+	* OmniXML.pas: Fixed bug in TXMLNode.SelectNodes function.  Moved
+	  procedures TXMLNode.SelectNodes and TXMLNode.SelectSingleNode to
+	  protected section to avoid incorrect usage (use functions with
+	  same name instead).
+
+2004-04-21 21:49  mr
+
+	* OmniXML.pas: Raise an exception when trying to write a value with
+	  ']]>' inside to CDATA.
+
+2004-04-21 20:41  mr
+
+	* OmniXML.pas: Made ShrinkEOL and ExpandEOL functions public.
+
+2004-04-21 20:31  gp
+
+	* OmniXMLUtils.pas: Updated GetNodeText, GetNodeCData to use
+	  .NodeValue instead of .Text internally.
+
+2004-04-17 11:16  mr
+
+	* GpMemStr.pas, GpStreamWrapper.pas, GpTextStream.pas,
+	  MSXML2_TLB.dcr, MSXML2_TLB.pas, OmniXML.inc, OmniXML.pas,
+	  OmniXMLConf.pas, OmniXMLDatabase.pas, OmniXMLPersistent.pas,
+	  OmniXMLProperties.pas, OmniXMLShared.pas, OmniXMLUtils.pas,
+	  OmniXML_JEDI.inc, OmniXML_LookupTables.pas, OmniXML_MSXML.pas,
+	  demo/BioLife/BioLife.dpr, demo/BioLife/BioLife.res,
+	  demo/BioLife/blMain.ddp, demo/BioLife/blMain.dfm,
+	  demo/BioLife/blMain.pas, demo/ErrorInfo/ErrorInfo.dpr,
+	  demo/ErrorInfo/ErrorInfo.res, demo/ErrorInfo/main.ddp,
+	  demo/ErrorInfo/main.dfm, demo/ErrorInfo/main.pas,
+	  demo/FileList/FileList.dpr, demo/FileList/FileList.res,
+	  demo/FileList/main.ddp, demo/FileList/main.dfm,
+	  demo/FileList/main.pas, demo/MemTest/MemTest.dpr,
+	  demo/MemTest/MemTest.res, demo/MemTest/main.ddp,
+	  demo/MemTest/main.dfm, demo/MemTest/main.pas,
+	  demo/MemTest/main.xfm, demo/Properties/RSSReader.dpr,
+	  demo/Properties/RSSReader.res, demo/Properties/rrMain.dfm,
+	  demo/Properties/rrMain.pas, demo/Properties/rrRSS.pas,
+	  demo/Properties/summary.xml, demo/Storage/Storage.dpr,
+	  demo/Storage/Storage.res, demo/Storage/main.ddp,
+	  demo/Storage/main.dfm, demo/Storage/main.pas,
+	  demo/Xtreme/Xtreme.dpr, demo/Xtreme/Xtreme.res,
+	  demo/Xtreme/main.ddp, demo/Xtreme/main.dfm, demo/Xtreme/main.pas,
+	  demo/doc/animals.xml, demo/xmlFormatter/xmlFormatter.dpr,
+	  demo/xmlFormatter/xmlFormatter.res, dpk/OmniXML_d5.dpk,
+	  dpk/OmniXML_d5.res, dpk/OmniXML_d6.dpk, dpk/OmniXML_d6.res,
+	  dpk/OmniXML_d7.dpk, dpk/OmniXML_d7.res: Initial import to CVS
+	  from current source code.
+
+2004-04-17 11:16  mr
+
+	* GpMemStr.pas, GpStreamWrapper.pas, GpTextStream.pas,
+	  MSXML2_TLB.dcr, MSXML2_TLB.pas, OmniXML.inc, OmniXML.pas,
+	  OmniXMLConf.pas, OmniXMLDatabase.pas, OmniXMLPersistent.pas,
+	  OmniXMLProperties.pas, OmniXMLShared.pas, OmniXMLUtils.pas,
+	  OmniXML_JEDI.inc, OmniXML_LookupTables.pas, OmniXML_MSXML.pas,
+	  demo/BioLife/BioLife.dpr, demo/BioLife/BioLife.res,
+	  demo/BioLife/blMain.ddp, demo/BioLife/blMain.dfm,
+	  demo/BioLife/blMain.pas, demo/ErrorInfo/ErrorInfo.dpr,
+	  demo/ErrorInfo/ErrorInfo.res, demo/ErrorInfo/main.ddp,
+	  demo/ErrorInfo/main.dfm, demo/ErrorInfo/main.pas,
+	  demo/FileList/FileList.dpr, demo/FileList/FileList.res,
+	  demo/FileList/main.ddp, demo/FileList/main.dfm,
+	  demo/FileList/main.pas, demo/MemTest/MemTest.dpr,
+	  demo/MemTest/MemTest.res, demo/MemTest/main.ddp,
+	  demo/MemTest/main.dfm, demo/MemTest/main.pas,
+	  demo/MemTest/main.xfm, demo/Properties/RSSReader.dpr,
+	  demo/Properties/RSSReader.res, demo/Properties/rrMain.dfm,
+	  demo/Properties/rrMain.pas, demo/Properties/rrRSS.pas,
+	  demo/Properties/summary.xml, demo/Storage/Storage.dpr,
+	  demo/Storage/Storage.res, demo/Storage/main.ddp,
+	  demo/Storage/main.dfm, demo/Storage/main.pas,
+	  demo/Xtreme/Xtreme.dpr, demo/Xtreme/Xtreme.res,
+	  demo/Xtreme/main.ddp, demo/Xtreme/main.dfm, demo/Xtreme/main.pas,
+	  demo/doc/animals.xml, demo/xmlFormatter/xmlFormatter.dpr,
+	  demo/xmlFormatter/xmlFormatter.res, dpk/OmniXML_d5.dpk,
+	  dpk/OmniXML_d5.res, dpk/OmniXML_d6.dpk, dpk/OmniXML_d6.res,
+	  dpk/OmniXML_d7.dpk, dpk/OmniXML_d7.res: Initial revision
+
