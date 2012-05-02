@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/OmniXML_JEDI.inc,v 1.5 2008/06/29 14:36:59 mremec Exp $ }
-
 {$IFNDEF JEDI_INC}
 {$DEFINE JEDI_INC}
 

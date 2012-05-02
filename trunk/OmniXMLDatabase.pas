@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/OmniXMLDatabase.pas,v 1.2 2006/01/29 17:43:58 mremec Exp $ }
-
 (*:XML helper unit. Contains routines to copy data between XML and TDataSet.
    @author Primoz Gabrijelcic
    @desc <pre>

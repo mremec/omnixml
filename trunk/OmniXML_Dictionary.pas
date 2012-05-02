@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/OmniXML_Dictionary.pas,v 1.5 2008/09/12 11:25:17 mremec Exp $ }
-
 (*******************************************************************************
 * The contents of this file are subject to the Mozilla Public License Version
 * 1.1 (the "License"); you may not use this file except in compliance with the

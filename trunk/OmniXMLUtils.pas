@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/OmniXMLUtils.pas,v 1.13 2010/07/21 07:45:38 mremec Exp $ }
-
 (*:XML helper unit. Contains routines to convert data, retrieve/set data of
    different types, manipulate nodes, load/save XML documents.
    @author Primoz Gabrijelcic
