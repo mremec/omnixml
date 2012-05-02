@@ -1,0 +1,51 @@
+{ $OmniXML: OmniXML/dpk/OmniXMLCore.dpk,v 1.3 2008/10/16 13:35:20 mremec Exp $ }
+
+package OmniXMLCore;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS ON}
+{$RANGECHECKS ON}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE ON}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'OmniXML - www.omnixml.com'}
+{$RUNONLY}
+{$IMPLICITBUILD OFF}
+{$INCLUDE define_libsuffix.inc}
+
+requires
+  vcl,
+  rtl,
+  dbrtl;
+
+contains
+  OmniXML_Types in '..\OmniXML_Types.pas',
+  OmniXML in '..\OmniXML.pas',
+  OmniXML_Dictionary in '..\OmniXML_Dictionary.pas',
+  OmniXML_LookupTables in '..\OmniXML_LookupTables.pas',
+  OmniXMLXPath in '..\OmniXMLXPath.pas',
+  GpTextStream in '..\GpTextStream.pas',
+  GpStreamWrapper in '..\GpStreamWrapper.pas',
+  OmniXMLPersistent in '..\OmniXMLPersistent.pas',
+  OmniXMLProperties in '..\OmniXMLProperties.pas',
+  OmniXMLUtils in '..\OmniXMLUtils.pas',
+  OmniXMLDatabase in '..\OmniXMLDatabase.pas',
+  OmniXMLConf in '..\OmniXMLConf.pas';
+
+end.
