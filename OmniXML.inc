@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/OmniXML.inc,v 1.4 2008/09/12 11:25:17 mremec Exp $ }
-
 {$IFDEF CONDITIONALEXPRESSIONS}
 
   {$IF Declared(CompilerVersion) and (CompilerVersion >= 14.0)}  // Delphi 6 or newer

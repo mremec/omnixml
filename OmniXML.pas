@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/OmniXML.pas,v 1.32 2010/01/02 16:24:43 mremec Exp $ }
-
 (*******************************************************************************
 * The contents of this file are subject to the Mozilla Public License Version  *
 * 1.1 (the "License"); you may not use this file except in compliance with the *

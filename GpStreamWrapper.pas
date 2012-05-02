@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/GpStreamWrapper.pas,v 1.5 2008/06/29 16:50:18 mremec Exp $ }
-
 {$B-,H+,J+,Q-,T-,X+}
 
 (*:Some useful stream wrappers.

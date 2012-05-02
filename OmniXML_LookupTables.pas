@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/OmniXML_LookupTables.pas,v 1.2 2005/12/01 19:27:06 mremec Exp $ }
-
 (*******************************************************************************
 * The contents of this file are subject to the Mozilla Public License Version  *
 * 1.1 (the "License"); you may not use this file except in compliance with the *

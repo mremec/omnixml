@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/extras/OmniXMLShared.pas,v 1.1 2004/06/07 13:06:32 mr Exp $ }
-
 {$WEAKPACKAGEUNIT ON}
 
 (*:XML helper unit. Contains class to manage shared XML document (stored in the

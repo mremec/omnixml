@@ -1,5 +1,3 @@
-{ $OmniXML: OmniXML/dpk/OmniXMLCore.dpk,v 1.3 2008/10/16 13:35:20 mremec Exp $ }
-
 package OmniXMLCore;
 
 {$R *.res}
