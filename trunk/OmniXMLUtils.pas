@@ -2,15 +2,19 @@
    different types, manipulate nodes, load/save XML documents.
    @author Primoz Gabrijelcic
    @desc <pre>
-   (c) 2008 Primoz Gabrijelcic
+   (c) 2011 Primoz Gabrijelcic
    Free for personal and commercial use. No rights reserved.
 
    Author            : Primoz Gabrijelcic
    Creation date     : 2001-10-25
-   Last modification : 2010-07-06
-   Version           : 1.29
+   Last modification : 2011-03-01
+   Version           : 1.30
 </pre>*)(*
    History:
+     1.30: 2011-03-01
+       - Convert EFOpenError exception in XMLLoadFromFile to function result.
+     1.29: 2011-02-07
+       - Fixed possible accvio in SelectNode.
      1.29: 2010-07-06
        - Overloaded SelectNode.
      1.28: 2010-07-05
@@ -134,8 +138,11 @@ interface
   {$IF (CompilerVersion >= 17)} //Delphi 2005 or newer
     {$DEFINE OmniXmlUtils_Enumerators}
   {$IFEND}
-  {$IF CompilerVersion >= 20.0}  // Delphi 2009 or newer
+  {$IF CompilerVersion >= 20}  // Delphi 2009 or newer
     {$DEFINE OmniXmlUtils_Base64UsePointerMath}
+  {$IFEND}
+  {$IF CompilerVersion >= 23} // Delphi XE2 or newer
+    {$DEFINE OmniXmlUtils_UseUITypes}
   {$IFEND}
 {$ENDIF}
 
@@ -154,6 +161,9 @@ uses
 {$IFDEF HAS_UNIT_VARIANTS}
   ,Variants
 {$ENDIF DELPHI6_UP}
+{$IFDEF OmniXmlUtils_UseUITypes}
+  ,UITypes
+{$ENDIF OmniXmlUtils_UseUITypes}
   ;
 
 type
@@ -392,7 +402,7 @@ type
   {:A family of functions used to convert value to string according to the
     conversion rules used in this unit. Used in Set* functions above.
   }
-  function XMLRealToStr(value: real): XmlString;
+  function XMLRealToStr(value: real; precision: byte = 15): XmlString;
   function XMLExtendedToStr(value: extended): XmlString;
   function XMLCurrencyToStr(value: Currency): XmlString;
   function XMLIntToStr(value: integer): XmlString;
@@ -523,8 +533,8 @@ type
   {:Select single node possibly more than one level below.
   @since   2003-09-21
   }
-  function SelectNode(parentNode: IXMLNode; nodeTag: string): IXMLNode; overload;
-  function SelectNode(parentNode: IXMLNode; nodeTag: string; var childNode: IXMLNode): boolean; overload;
+  function SelectNode(parentNode: IXMLNode; const nodeTag: string): IXMLNode; overload;
+  function SelectNode(parentNode: IXMLNode; const nodeTag: string; var childNode: IXMLNode): boolean; overload;
 
   {:Ensure that the node exists and return its interface.
   }
@@ -661,6 +671,15 @@ const
   DEFAULT_DATESEPARATOR     = '-'; // don't change!
   DEFAULT_TIMESEPARATOR     = ':'; // don't change!
   DEFAULT_MSSEPARATOR       = '.'; // don't change!
+
+function DecimalSeparator: char;
+begin
+  {$IFDEF Unicode}
+  Result := FormatSettings.DecimalSeparator;
+  {$ELSE}
+  Result := SysUtils.DecimalSeparator;
+  {$ENDIF Unicode}
+end; { DecimalSeparator }
 
 {:Convert time from string (ISO format) to TDateTime.
 }
@@ -1807,9 +1826,9 @@ begin
   Result := XMLStrToTime(GetNodeAttrStr(parentNode, attrName));
 end; { GetNodeAttrTime }
 
-function XMLRealToStr(value: real): XmlString;
+function XMLRealToStr(value: real; precision: byte = 15): XmlString;
 begin
-  Result := StringReplace(FloatToStr(value),
+  Result := StringReplace(FloatToStrF(value, ffGeneral, precision, 0),
     DecimalSeparator, DEFAULT_DECIMALSEPARATOR, [rfReplaceAll]);
 end; { XMLRealToStr }
 
@@ -2345,23 +2364,23 @@ end; { FindProcessingInstruction }
   @param   nodeTag    Tag of the child node.
   @since   2003-09-21
 }
-function SelectNode(parentNode: IXMLNode; nodeTag: string): IXMLNode;
+function SelectNode(parentNode: IXMLNode; const nodeTag: string): IXMLNode;
 begin
   if IsDocument(parentNode) and (assigned(DocumentElement(parentNode))) then
     Result := DocumentElement(parentNode)
   else
     Result := parentNode;
-  if (nodeTag <> '') and (Result.NodeName <> nodeTag) then
+  if (nodeTag <> '') and assigned(Result) and (Result.NodeName <> nodeTag) then
     Result := Result.SelectSingleNode(nodeTag);
 end; { SelectNode }
 
-function SelectNode(parentNode: IXMLNode; nodeTag: string; var childNode: IXMLNode): boolean;
+function SelectNode(parentNode: IXMLNode; const nodeTag: string; var childNode: IXMLNode): boolean;
 begin
   if IsDocument(parentNode) and (assigned(DocumentElement(parentNode))) then
     childNode := DocumentElement(parentNode)
   else
     childNode := parentNode;
-  if (nodeTag <> '') and (childNode.NodeName <> nodeTag) then
+  if (nodeTag <> '') and assigned(childNode) and (childNode.NodeName <> nodeTag) then
     childNode := childNode.SelectSingleNode(nodeTag);
   Result := assigned(childNode);
 end; { SelectNode }
@@ -2536,7 +2555,12 @@ end; { XMLSaveToStream }
 }
 function XMLLoadFromFile(xmlDocument: IXMLDocument; const xmlFileName: string): boolean;
 begin
-  Result := xmlDocument.Load(xmlFileName);
+  try
+    Result := xmlDocument.Load(xmlFileName);
+  except
+    on E: EFOpenError do
+      Result := false;
+  end;
 end; { XMLLoadFromFile }
 
 {:@param   xmlDocument  XML document.
