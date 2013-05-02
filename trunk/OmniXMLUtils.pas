@@ -674,11 +674,15 @@ const
 
 function DecimalSeparator: char;
 begin
-  {$IFDEF Unicode}
-  Result := FormatSettings.DecimalSeparator;
+  {$IFDEF CONDITIONALEXPRESSIONS}
+    {$IF RTLVersion >= 22.0}  // Delphi XE
+    Result := FormatSettings.DecimalSeparator;
+    {$ELSE}
+    Result := SysUtils.DecimalSeparator;  // Delphi 2010 and below
+    {$IFEND}
   {$ELSE}
   Result := SysUtils.DecimalSeparator;
-  {$ENDIF Unicode}
+  {$ENDIF}  // CONDITIONALEXPRESSIONS
 end; { DecimalSeparator }
 
 {:Convert time from string (ISO format) to TDateTime.
