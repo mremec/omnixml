@@ -4,14 +4,195 @@
 
    Maintainer        : gabr
    Contributors      : ales, aoven, gabr, Lee_Nover, _MeSSiah_, Miha-R, Odisej, xtreme,
-                       Brdaws, Gre-Gor, krho, Cavlji, radicalb, fora, M.C, MP002
+                       Brdaws, Gre-Gor, krho, Cavlji, radicalb, fora, M.C, MP002, Mitja,
+                       Christian Wimmer, Tommi Prami, Miha, Craig Peterson
    Creation date     : 2002-10-09
-   Last modification : 2008-08-20
-   Version           : 1.41
+   Last modification : 2013-02-07
+   Version           : 1.72
 </pre>*)(*
    History:
+     1.72: 2013-02-07
+       - Added function DSiIsCodeSigned.
+     1.71b: 2012-12-12
+       - Fixed parameter types in DSiClassWndProc.
+     1.71a: 2012-11-04
+       - TNonClientMetrics.cbSize is correctly initialized.
+     1.71: 2012-10-19
+       - Defined type DSiNativeInt and DSiNativeUInt which map to integer/cardinal on
+         Delphi XE and older.
+       - Fixed invalid casting in DSiAllocateHWnd.
+       - All internal DEFINEs were renamed with 'DSi' prefix.
+     1.70b: 2012-06-12
+       - DSiEnumFiles* will also enumerate hidden folders if 'attr' contains faHidden flag.
+     1.70a: 2012-05-22
+       - [Tommi Prami, MihaR] Defined ULONG_PTR and ULONGLONG for Delphis up to D2006.
+     1.70: 2012-05-21
+       - TDSiRegistry.ReadBool accepts 't' and 'true' as True.
+     1.69: 2012-05-18
+       - Added dynamically loaded API forwarder DSiGetLogicalProcessorInformation.
+       - Added function DSiGetLogicalProcessorInfo. 
+       - Fixed a bug in DSiEnumFilesToOL.
+     1.68: 2012-05-16
+       - New function: DSiEnumFilesToOL.
+     1.67: 2012-05-15
+       - Callback functions are declared as anonymous delegates in D2009 and newer.
+     1.66: 2012-04-20
+       - TDSiRegistry.ReadBinary, WriteBinary now use RawByteString for data buffer.
+     1.65: 2012-02-06
+       - Implemented DSiSetFileTime and DSiSetFileTimes.
+       - Implemented DSiDateTimeToFileTime.
+     1.64b: 2012-01-11
+       - Set msg.Result := 0; in DSiClassWndProc.
+     1.64a: 2011-12-20
+       - DSiAllocateHWnd works in 64-bit mode.
+       - Fixed 64-bit DSiInterlockedExchangeAdd64.
+     1.64: 2011-12-16
+       - [GJ] Assembler implementation of the x64 version of Interlocked*64 family of functions.
+     1.63: 2011-10-21
+       - Interlocked*64 family implemented using Windows' InterlockedCompareExchange64
+         on Win64-bit platform.
+       - Removed dependency on the Consts unit.
+       - Scoped unit names are used in XE2.
+     1.62a: 2011-11-07
+       - Compiles with XE2 (in 32-bit mode).
+     1.62: 2011-09-26
+       - Implemented DSiGetThreadTime (two overloaded versions).
+     1.61c: 2011-07-26
+       - [miha] SetErrorMode (SEM_NOOPENFILEERRORBOX) is called before LoadLibrary to 
+         prevent opening messagebox by Windows.
+     1.61b: 2011-06-27
+       - [tommi prami] Compiles with D7.
+     1.61a: 2011-05-06
+       - [achim] DSiAddApplicationToFirewallExceptionListXP could fail with "Unknown
+         resoveConflict" exception due to a syntax error.
+     1.61: 2011-03-01
+       - Faster DSiFileExtensionIs.
+     1.60: 2010-12-04
+       - When compiled with D2007 or newer, unit FileCtrl is not included.
+     1.59b: 2010-10-28
+       - Call UniqueString before calling CreateProcessW.
+     1.59a: 2010-09-25
+       - [Tommi Prami] Added types missing in Delphi 7.
+     1.59: 2010-09-24
+       - Added function DSiDisableStandby that will try to disable standby and hibernate
+         on Windows XP SP 2 and newer.
+     1.58a: 2010-09-19
+       - Define TStartupInfoW in Delphi 7 and earlier.
+     1.58: 2010-07-27
+       - DSiAddApplicationToFirewallExceptionList[Advanced|XP] got a new parameter
+         TDSiFwResolveConflict (default rcDuplicate) where the caller can specify
+         behaviour if the rule with the same name already exists.
+         [rcDuplicate = add new rule with the same name, rcOverwrite = remove all rules
+          with the same name and then add the new rule, rcSkip = leave existing rules
+          intact and don't add the new rule]
+       - Implemented DSiFindApplicationInFirewallExceptionList[Advanced|XP].
+     1.57a: 2010-07-20
+       - Bug fix in DSiAddApplicationToFirewallExceptionListAdvanced: setting
+         rule.ServiceName to '' caused fwPolicy2.Rules.Add(rule) to raise exception.
+     1.57: 2010-06-18
+       - DSiExecuteAsUser now calls CreateProcessWithLogonW if CreateProcessAsUser fails
+         with ERROR_PRIVILEGE_NOT_HELD (1314). Windows error code is now returned in a
+         parameter. Window station and desktop process-specific ACEs are removed in a
+         background thread when child process exits (thanks to Christian Wimmer to pointing
+         out this problem). If the username is not set, DSiExecuteAsUser still sets up
+         ACEs for window station/desktop access but ends calling CreateProcess and does
+         not remove ACEs at the end.
+       - Two overloaded versions of DSiExecuteAsUser are implemented. One is backwards
+         compatible and another introduces two parameters -
+         out processInfo: TProcessInformation and startInfo: PStartupInfo (default: nil).
+         If the latter is assigned, it will be used instead of the internally generated
+         TStartupInfo. This version does not close process and thread handle returned
+         in the TProcessInformation if 'wait' is False.
+       - Implemented DSiRemoveAceFromWindowStation and DSiRemoveAceFromDesktop.
+       - Added dynamically loaded API forwarders DSiCreateProcessWithLogonW,
+         DSiCreateEnvironmentBlock, DSiDestroyEnvironmentBlock and
+         DSiGetUserProfileDirectoryW.
+       - DSiAddAceTo[WindowStation|Desktop] will not add SID if it already exists in the
+         ACL.
+     1.56: 2010-06-10
+       - [Mitja] Clear the last error if CreateProcess succeeds in DSiExecuteAndCapture
+         (found a test case where CreateProcess succeeded but last error was 126).
+       - [Christian Wimmer] In Unicode Delphis, DSiOpenSCManager, DSiGetLongPathName,
+         DSiGetModuleFileNameEx, DSiGetProcessImageFileName, DSiSetDllDirectory, and
+         DSiSHEmptyRecycleBin were linking to the wrong verison of the API.
+       - [Christian Wimmer] DSiCreateProcessAsUser must make a local copy of the
+         commandLine parameter when using Unicode API because the API may modify the
+         contents of this parameter.
+       - Implemented DSiGetLogonSID, DSiAddAceToWindowStation and DSiAddAceToDesktop.
+       - Redesigned DSiExecuteAsUser.
+     1.55: 2010-04-12
+       - Implemented DSiHasElapsed64 and DSiElapsedTime64.
+     1.54: 2010-04-08
+       - Implemented DSiLogonAs and DSiVerifyPassword.
+     1.53c: 2010-02-01
+       - DSiGetProcAddress made public.
+     1.53b: 2009-12-15
+       - Fixed Delphi 5 compilation.
+     1.53a: 2009-11-24
+       - Fixed TDSiRegistry.ReadVariant and WriteVariant to work with varUString
+         (also fixes all sorts of TDSiRegistry problems in Delphi 2010.)
+     1.53: 2009-11-13
+       - Implemented DSiDeleteRegistryValue.
+       - Added parameter 'access' to the DSiKillRegistry.
+     1.52a: 2009-11-04
+       - [Mitja] Fixed allocation in DSiGetUserName.
+       - [Mitja] Also catch 'error' output in DSiExecuteAndCapture.
+     1.52: 2009-10-28
+       - DSiAddApplicationToFirewallExceptionList renamed to
+         DSiAddApplicationToFirewallExceptionListXP.
+       - Added DSiAddApplicationToFirewallExceptionListAdvanced which uses Advanced
+         Firewall interface, available on Vista+.
+       - DSiAddApplicationToFirewallExceptionList now calls either
+         DSiAddApplicationToFirewallExceptionListXP or
+         DSiAddApplicationToFirewallExceptionListAdvanced, depending on OS version.
+       - Implemented functions to remove application from the firewall exception list:
+         DSiRemoveApplicationFromFirewallExceptionList,
+         DSiRemoveApplicationFromFirewallExceptionListAdvanced,
+         DSiRemoveApplicationFromFirewallExceptionListXP.
+     1.51a: 2009-10-27
+       - Convert non-EOleSysError exceptions in DSiAddApplicationToFirewallExceptionList
+         into ERROR_INVALID_FUNCTION error.
+     1.51: 2009-10-22
+       - Added 'onNewLine' callback to the DSiExecuteAndCapture. This event reports
+         program output line-by-line in real time and it can extend total time allowed
+         for program execution.
+     1.50: 2009-10-20
+       - [Mitja] Updated DSiExecuteAndCapture: settable timeout, Unicode Delphi support,
+         LastError is set if CreateProcess fails.
+       - Implemented functions DSiGetSubstDrive and DSiGetSubstPath.
+     1.49: 2009-10-12
+       - Added 'access' parameter to the DSiWriteRegistry methods so that user can
+         request writing to the non-virtualized key when running on 64-bit system
+         (KEY_WOW64_64KEY).
+     1.48: 2009-10-09
+       - Defined TOSVersionInfoEx record and corresponding constants.
+       - Extended DSiGetWindowsVersion to return wvWinServer2008, wvWin7 and
+         wvWinServer2008R2.
+       - Extended DSiGetTrueWindowsVersion to return wvWinServer2008OrVistaSP1 and
+         wvWin7OrServer2008R2.
+     1.47a: 2009-09-03
+       - Added parameter connectionIsAvailable to the DSiGetNetworkResource.
+     1.47: 2009-05-22
+       - Added dynamically loaded API forwarder DSiGetTickCount64.
+     1.46: 2009-03-17
+       - Added dynamically loaded API forwarders DSiWow64DisableWow64FsRedirection and
+         DSiWow64RevertWow64FsRedirection.
+       - Implemented function DSiDisableWow64FsRedirection and DSiRevertWow64FsRedirection.
+     1.45: 2009-03-16
+       - Implemented DSiGetCurrentThreadHandle and DSiGetCurrentProcessHandle.
+     1.44a: 2009-02-28
+       - Added D2009 compatibility fixes to DSiGetFolderLocation, DSiGetNetworkResource,
+         DSiGetComputerName, DSiGetWindowsFolder.
+       - Fixed DSiGetTempFileName, DSiGetUserName.
+     1.44: 2009-02-05
+       - Added functions DSiAddApplicationToFirewallExceptionList and
+         DSiAddPortToFirewallExceptionList.
+     1.43: 2009-01-28
+       - Added functions DSiGetNetworkResource, DSiDisconnectFromNetworkResource.
+     1.42: 2009-01-23
+       - Added functions DSiGetGlobalMemoryStatus, DSiGlobalMemoryStatusEx.
      1.41: 2008-08-20
-       - Tiburon compatibility.
+       - Delphi 2009 compatibility.
      1.40c: 2008-07-14
        - Bug fixed: It was not possible to use DSiTimeGetTime64 in parallel from multiple
          threads
@@ -235,27 +416,43 @@ unit DSiWin32;
 
 {$J+,T-} // required!
 
-interface 
+interface
 
 {$IFDEF Linux}{$MESSAGE FATAL 'This unit is for Windows only'}{$ENDIF Linux}
+{$IFDEF OSX}{$MESSAGE FATAL 'This unit is for Windows only'}{$ENDIF OSX}
 {$IFDEF MSWindows}{$WARN SYMBOL_PLATFORM OFF}{$WARN UNIT_PLATFORM OFF}{$ENDIF MSWindows}
 
-{$DEFINE NeedUTF}{$UNDEF NeedVariants}
-{$IFDEF ConditionalExpressions}{$UNDEF NeedUTF}{$DEFINE NeedVariants}{$ENDIF}
+{$DEFINE DSiNeedUTF}{$UNDEF DSiNeedVariants}{$DEFINE DSiNeedStartupInfo}
+{$DEFINE DSiNeedFileCtrl}
+{$DEFINE DSiNeedRawByteString}
+{$IFDEF ConditionalExpressions}
+  {$UNDEF DSiNeedUTF}{$DEFINE DSiNeedVariants}{$UNDEF DSiNeedStartupInfo}{$UNDEF DSiHasSafeNativeInt}
+  {$IF RTLVersion >= 18}{$UNDEF DSiNeedFileCtrl}{$IFEND}
+  {$IF CompilerVersion >= 23}{$DEFINE DSiScopedUnitNames}{$DEFINE DSiHasSafeNativeInt}{$IFEND}
+  {$IF CompilerVersion >= 20}{$DEFINE DSiHasAnonymousFunctions}{$IFEND}
+  {$IF CompilerVersion < 18.5}{$DEFINE DSiNeedULONGEtc}{$IFEND}
+{$ENDIF}
+{$IFDEF Unicode}{$UNDEF DSiNeedRawByteString}{$ENDIF}
 
 uses
-  Windows,
-  Messages,
-  Consts,
-  {$IFDEF NeedVariants}
-  Variants,
+  {$IFDEF DSiScopedUnitNames}Winapi.Windows{$ELSE}Windows{$ENDIF},
+  {$IFDEF DSiScopedUnitNames}Winapi.Messages{$ELSE}Messages{$ENDIF},
+  {$IFDEF DSiNeedVariants}
+  {$IFDEF DSiScopedUnitNames}System.Variants{$ELSE}Variants{$ENDIF},
   {$ENDIF}
-  SysUtils,
-  ShellAPI,
-  ShlObj,
-  Classes,
-  Graphics,
-  Registry;
+  {$IFDEF DSiNeedFileCtrl}
+  FileCtrl, // use before SysUtils so deprecated functions from FileCtrl can be reintroduced
+  {$ENDIF DSiNeedFileCtrl}
+  {$IFDEF DSiScopedUnitNames}
+  System.UITypes,
+  {$ENDIF}
+  {$IFDEF DSiScopedUnitNames}System.SysUtils{$ELSE}SysUtils{$ENDIF},
+  {$IFDEF DSiScopedUnitNames}Winapi.ShellAPI{$ELSE}ShellAPI{$ENDIF},
+  {$IFDEF DSiScopedUnitNames}Winapi.ShlObj{$ELSE}ShlObj{$ENDIF},
+  {$IFDEF DSiScopedUnitNames}System.Classes{$ELSE}Classes{$ENDIF},
+  {$IFDEF DSiScopedUnitNames}System.Contnrs{$ELSE}Contnrs{$ENDIF},
+  {$IFDEF DSiScopedUnitNames}Vcl.Graphics{$ELSE}Graphics{$ENDIF},
+  {$IFDEF DSiScopedUnitNames}System.Win.Registry{$ELSE}Registry{$ENDIF};
 
 const
   // pretty wrappers
@@ -313,7 +510,7 @@ const
   CSIDL_WINDOWS                 = $0024; //GetWindowsDirectory()
 
   CSIDL_FLAG_DONT_UNEXPAND = $2000; //Combine with another CSIDL constant to ensure expanding of environment variables.
-  CSIDL_FLAG_DONT_VERIFY   = $4000; //Combine with another CSIDL constant, except for CSIDL_FLAG_CREATE, to return an unverified folder path—with no attempt to create or initialize the folder.
+  CSIDL_FLAG_DONT_VERIFY   = $4000; //Combine with another CSIDL constant, except for CSIDL_FLAG_CREATE, to return an unverified folder path-with no attempt to create or initialize the folder.
   CSIDL_FLAG_CREATE        = $8000; // new for Win2K, OR this in to force creation of folder
 
   FILE_DEVICE_FILE_SYSTEM  = 9;
@@ -377,6 +574,21 @@ const
   SE_GROUP_ENABLED = $00000004;
 
 type
+  {$IFDEF DSiNeedULONGEtc}
+    ULONG_PTR = Cardinal;
+    {$EXTERNALSYM ULONG_PTR}
+    ULONGLONG = UInt64;
+    {$EXTERNALSYM ULONGLONG}
+  {$ENDIF}
+  {$IFDEF DSiHasSafeNativeInt}
+  DSiNativeInt = NativeInt;
+  DSiNativeUInt = NativeUInt;
+  {$ELSE}
+  {$IFDEF CPUX64}! Implementation error{$ENDIF}
+  DSiNativeInt = integer;
+  DSiNativeUInt = cardinal;
+  {$ENDIF}
+
   // API types not defined in Delphi 5
   PWkstaInfo100 = ^TWkstaInfo100;
   _WKSTA_INFO_100 = record
@@ -430,14 +642,40 @@ type
   TProcessMemoryCounters = _PROCESS_MEMORY_COUNTERS;
   PProcessMemoryCounters = ^_PROCESS_MEMORY_COUNTERS;
 
+  DWORDLONG = int64;
+  
+  PMemoryStatusEx = ^TMemoryStatusEx;
+  _MEMORYSTATUSEX = record
+    dwLength: DWORD;
+    dwMemoryLoad: DWORD;
+    ullTotalPhys: DWORDLONG;
+    ullAvailPhys: DWORDLONG;
+    ullTotalPageFile: DWORDLONG;
+    ullAvailPageFile: DWORDLONG;
+    ullTotalVirtual: DWORDLONG;
+    ullAvailVirtual: DWORDLONG;
+    ullAvailExtendedVirtual: DWORDLONG;
+  end;
+  TMemoryStatusEx = _MEMORYSTATUSEX;
+  MEMORYSTATUSEX = _MEMORYSTATUSEX;
+
   // Service Controller handle
   SC_HANDLE = THandle;
 
   // DSiEnumFiles callback
-  TDSiEnumFilesCallback = procedure(const longFileName: string) of object;
+  TDSiEnumFilesCallback = {$IFDEF DSiHasAnonymousFunctions}reference to{$ENDIF}
+    procedure(const longFileName: string)
+    {$IFNDEF DSiHasAnonymousFunctions}of object{$ENDIF};
   // DSiEnumFilesEx callback
-  TDSiEnumFilesExCallback = procedure(const folder: string; S: TSearchRec;
-    isAFolder: boolean; var stopEnum: boolean) of object;
+  TDSiEnumFilesExCallback = {$IFDEF DSiHasAnonymousFunctions}reference to{$ENDIF}
+    procedure(const folder: string; S: TSearchRec;
+    isAFolder: boolean; var stopEnum: boolean)
+    {$IFNDEF DSiHasAnonymousFunctions}of object{$ENDIF};
+
+  // DSiExecuteAndCapture callback
+  TDSiOnNewLineCallback = {$IFDEF DSiHasAnonymousFunctions}reference to{$ENDIF}
+    procedure(const line: string; var runningTimeLeft_sec: integer)
+    {$IFNDEF DSiHasAnonymousFunctions}of object{$ENDIF};
 
   TDSiFileTime = (ftCreation, ftLastAccess, ftLastModification);
 
@@ -471,10 +709,15 @@ type
 
 const
   KEY_WOW64_64KEY = $0100;
-  
+
 type
+  {$IFDEF DSiNeedRawByteString}
+  RawByteString = AnsiString;
+  {$ENDIF DSiNeedRawByteString}
+
   TDSiRegistry = class(TRegistry)
-    function  ReadBinary(const name, defval: string): string; overload;
+  public
+    function  ReadBinary(const name: string; const defval: RawByteString): RawByteString; overload;
     function  ReadBinary(const name: string; dataStream: TStream): boolean; overload;
     function  ReadBool(const name: string; defval: boolean): boolean;
     function  ReadDate(const name: string; defval: TDateTime): TDateTime;
@@ -484,7 +727,7 @@ type
     function  ReadString(const name, defval: string): string;
     procedure ReadStrings(const name: string; strings: TStrings);
     function  ReadVariant(const name: string; defval: variant): variant;
-    procedure WriteBinary(const name, data: string); overload;
+    procedure WriteBinary(const name: string; data: RawByteString); overload;
     procedure WriteBinary(const name: string; data: TStream); overload;
     procedure WriteFont(const name: string; font: TFont);
     procedure WriteInt64(const name: string; value: int64);
@@ -494,8 +737,10 @@ type
 
   function DSiCreateRegistryKey(const registryKey: string;
     root: HKEY = HKEY_CURRENT_USER): boolean;
+  function DSiDeleteRegistryValue(const registryKey, name: string; root: HKEY =
+    HKEY_CURRENT_USER; access: longword = KEY_SET_VALUE): boolean;
   function DSiKillRegistry(const registryKey: string;
-    root: HKEY = HKEY_CURRENT_USER): boolean;
+    root: HKEY = HKEY_CURRENT_USER; access: longword = KEY_SET_VALUE): boolean;
   function DSiReadRegistry(const registryKey, name: string;
     defaultValue: Variant; root: HKEY = HKEY_CURRENT_USER;
     access: longword = KEY_QUERY_VALUE): Variant; overload;
@@ -507,9 +752,9 @@ type
   function DSiRegistryValueExists(const registryKey, name: string;
     root: HKEY = HKEY_CURRENT_USER; access: longword = KEY_QUERY_VALUE): boolean;
   function DSiWriteRegistry(const registryKey, name: string; value: int64;
-    root: HKEY = HKEY_CURRENT_USER): boolean; overload;
+    root: HKEY = HKEY_CURRENT_USER; access: longword = KEY_SET_VALUE): boolean; overload;
   function DSiWriteRegistry(const registryKey, name: string; value: Variant;
-    root: HKEY = HKEY_CURRENT_USER): boolean; overload;
+    root: HKEY = HKEY_CURRENT_USER; access: longword = KEY_SET_VALUE): boolean; overload;
 
 { Files }
 
@@ -534,13 +779,29 @@ const
   FOF_NORECURSION         = $1000;
   FOF_NORECURSEREPARSE    = $8000;
   FOF_WANTNUKEWARNING     = $4000;
-  FOF_NO_UI               = FOF_SILENT OR FOF_NOCONFIRMATION OR FOF_NOERRORUI OR FOF_NOCONFIRMMKDIR;
+  FOF_NO_UI               =  FOF_SILENT OR FOF_NOCONFIRMATION OR FOF_NOERRORUI OR FOF_NOCONFIRMMKDIR;
 
   CShFileOpFlagMappings: array [TShFileOpFlag] of FILEOP_FLAGS = (FOF_ALLOWUNDO,
     FOF_FILESONLY, FOF_MULTIDESTFILES, FOF_NOCONFIRMATION, FOF_NOCONFIRMMKDIR,
     FOF_NOCONNECTEDELEMENTS, FOF_NOERRORUI, FOF_NORECURSION, FOF_NORECURSEREPARSE,
     FOF_RENAMEONCOLLISION, FOF_SILENT, FOF_SIMPLEPROGRESS, FOF_WANTMAPPINGHANDLE,
     FOF_WANTNUKEWARNING, FOF_NO_UI);
+
+type
+  TDSiFileInfo = class
+  private
+    FDepth    : integer;
+    FFolder   : string;
+    FSearchRec: TSearchRec;
+  protected
+    function GetFullName: string;
+  public
+    constructor Create(const folder: string; searchRec: TSearchRec; depth: integer);
+    property Depth: integer read FDepth;
+    property Folder: string read FFolder;
+    property FullName: string read GetFullName;
+    property SearchRec: TSearchRec read FSearchRec;
+  end; { TDSiFileInfo }
 
   function  DSiCanWriteToFolder(const folderName: string): boolean;
   function  DSiCompressFile(fileHandle: THandle): boolean;
@@ -554,6 +815,9 @@ const
   procedure DSiDeleteTree(const folder: string; removeSubdirsOnly: boolean);
   function  DSiDeleteWithBatch(const fileName: string; rmDir: boolean = false): boolean;
   function  DSiDirectoryExistsW(const directory: WideString): boolean;
+  function  DSiDisableWow64FsRedirection(var oldStatus: pointer): boolean;
+  function  DSiDisconnectFromNetworkResource(mappedLetter: char; updateProfile: boolean =
+    false): boolean;
   function  DSiEjectMedia(deviceLetter: char): boolean;
   procedure DSiEmptyFolder(const folder: string);
   function  DSiEmptyRecycleBin: boolean;
@@ -565,6 +829,9 @@ const
   procedure DSiEnumFilesToSL(const fileMask: string; attr: integer; fileList: TStrings;
     storeFullPath: boolean = false; enumSubfolders: boolean = false;
     maxEnumDepth: integer = 0);
+  procedure DSiEnumFilesToOL(const fileMask: string; attr: integer;
+    fileList: TObjectList {of TDSiFileInfo};
+    enumSubfolders: boolean = false; maxEnumDepth: integer = 0);
   function  DSiFileExistsW(const fileName: WideString): boolean;
   function  DSiFileExtensionIs(const fileName, extension: string): boolean; overload;
   function  DSiFileExtensionIs(const fileName: string; extension: array of string):
@@ -576,6 +843,10 @@ const
   function  DSiGetFileTimes(const fileName: string; var creationTime, lastAccessTime,
     lastModificationTime: TDateTime): boolean;
   function  DSiGetLongPathName(const fileName: string): string;
+  function  DSiGetNetworkResource(mappedLetter: char; var networkResource: string; var
+    connectionIsAvailable: boolean): boolean;
+  function  DSiGetSubstDrive(mappedLetter: char): string;
+  function  DSiGetSubstPath(const path: string): string;
   function  DSiGetTempFileName(const prefix: string; const tempPath: string = ''): string;
   function  DSiGetTempPath: string;
   function  DSiGetUniqueFileName(const extension: string): string;
@@ -586,22 +857,38 @@ const
   function  DSiMoveFile(const srcName, destName: string; overwrite: boolean = true): boolean;
   function  DSiMoveOnReboot(const srcName, destName: string): boolean;
   procedure DSiRemoveFolder(const folder: string);
+  function  DSiRevertWow64FsRedirection(const oldStatus: pointer): boolean;
+  function DSiSetFileTime(const fileName: string; dateTime: TDateTime;
+    whatTime: TDSiFileTime): boolean;
+  function  DSiSetFileTimes(const fileName: string; creationTime, lastAccessTime,
+    lastModificationTime: TDateTime): boolean;
   function  DSiShareFolder(const folder, shareName, comment: string): boolean;
   function  DSiUncompressFile(fileHandle: THandle): boolean;
   function  DSiUnShareFolder(const shareName: string): boolean;
 
 { Processes }
 
+  function  DSiAddAceToDesktop(desktop: HDESK; sid: PSID): boolean;
+  function  DSiAddAceToWindowStation(station: HWINSTA; sid: PSID): boolean;
   function  DSiAffinityMaskToString(affinityMask: DWORD): string;
+  function  DSiGetCurrentProcessHandle: THandle;
+  function  DSiGetCurrentThreadHandle: THandle;
   function  DSiEnablePrivilege(const privilegeName: string): boolean;
   function  DSiExecute(const commandLine: string;
     visibility: integer = SW_SHOWDEFAULT; const workDir: string = '';
     wait: boolean = false): cardinal;
-  function  DSiExecuteAndCapture(const app: string; output: TStrings;
-    const workDir: string; var exitCode: longword): cardinal;
+  function  DSiExecuteAndCapture(const app: string; output: TStrings; const workDir: string;
+    var exitCode: longword; waitTimeout_sec: integer = 15; onNewLine: TDSiOnNewLineCallback
+    = nil): cardinal;
   function  DSiExecuteAsUser(const commandLine, username, password: string;
+    var winErrorCode: cardinal; const domain: string = '.';
+    visibility: integer = SW_SHOWDEFAULT; const workDir: string = '';
+    wait: boolean = false): cardinal; overload;
+  function  DSiExecuteAsUser(const commandLine, username, password: string;
+    var winErrorCode: cardinal; var processInfo: TProcessInformation;
     const domain: string = '.'; visibility: integer = SW_SHOWDEFAULT;
-    const workDir: string = ''; wait: boolean = false): cardinal;
+    const workDir: string = ''; wait: boolean = false;
+    startInfo: PStartupInfo = nil): cardinal; overload;
   function  DSiGetProcessAffinity: string;
   function  DSiGetProcessAffinityMask: DWORD;
   function  DSiGetProcessID(const processName: string; var processID: DWORD): boolean;
@@ -622,6 +909,8 @@ const
   function  DSiGetSystemAffinityMask: DWORD;
   function  DSiGetThreadAffinity: string;
   function  DSiGetThreadAffinityMask: DWORD;
+  function  DSiGetThreadTime: int64; overload;
+  function  DSiGetThreadTime(thread: THandle): int64; overload;
   function  DSiGetThreadTimes(var creationTime: TDateTime; var userTime,
     kernelTime: int64): boolean; overload;
   function  DSiGetThreadTimes(thread: THandle; var creationTime, exitTime: TDateTime;
@@ -630,9 +919,15 @@ const
     const domain: string = '.'): boolean;
   function  DSiIncrementWorkingSet(incMinSize, incMaxSize: integer): boolean;
   function  DSiIsDebugged: boolean;
+  function  DSiLogonAs(const username, password: string;
+    var logonHandle: THandle): boolean; overload;
+  function  DSiLogonAs(const username, password, domain: string;
+    var logonHandle: THandle): boolean; overload;
   function  DSiOpenURL(const URL: string; newBrowser: boolean = false): boolean;
   procedure DSiProcessThreadMessages;
   function  DSiRealModuleName: string;
+  function  DSiRemoveAceFromDesktop(desktop: HDESK; sid: PSID): boolean;
+  function  DSiRemoveAceFromWindowStation(station: HWINSTA; sid: PSID): boolean;
   function  DSiSetProcessAffinity(affinity: string): string;
   function  DSiSetProcessPriorityClass(const processName: string;
     priority: DWORD): boolean;
@@ -652,6 +947,7 @@ const
 
   procedure DSiFreePidl(pidl: PItemIDList);
   procedure DSiFreeMemAndNil(var mem: pointer);
+  function  DSiGetGlobalMemoryStatus(var memoryStatus: TMemoryStatusEx): boolean;
 
 { Windows }
 
@@ -661,6 +957,7 @@ type
                    
   function  DSiAllocateHWnd(wndProcMethod: TWndMethod): HWND;
   procedure DSiDeallocateHWnd(wnd: HWND);
+  function  DSiDisableStandby: boolean;
   procedure DSiDisableX(hwnd: THandle);
   procedure DSiEnableX(hwnd: THandle);
   function  DSiExitWindows(exitType: TDSiExitWindows): boolean;
@@ -720,7 +1017,8 @@ type
   TDSiBootType = (btNormal, btFailSafe, btFailSafeWithNetwork, btUnknown);
   TDSiWindowsVersion = (wvUnknown, wvWin31, wvWin95, wvWin95OSR2, wvWin98,
     wvWin98SE, wvWinME, wvWin9x, wvWinNT3, wvWinNT4, wvWin2000, wvWinXP,
-    wvWinNT, wvWinServer2003, wvWinVista);
+    wvWinNT, wvWinServer2003, wvWinVista, wvWinServer2008, wvWinServer2008OrVistaSP1,
+    wvWin7, wvWinServer2008R2, wvWin7OrServer2008R2, wvWin8);
 
   TDSiUIElement = (ueMenu, ueMessage, ueWindowCaption, ueStatus);
 
@@ -729,7 +1027,198 @@ const
     'Windows 3.1', 'Windows 95', 'Windows 95 OSR 2', 'Windows 98',
     'Windows 98 SE', 'Windows Me', 'Windows 9x', 'Windows NT 3.5',
     'Windows NT 4', 'Windows 2000', 'Windows XP', 'Windows NT', 'Windows Server 2003',
-    'Windows Vista');
+    'Windows Vista', 'Windows Server 2008', 'Windows Server 2008 or Windows Vista SP1',
+    'Windows 7', 'Windows Server 2008 R2', 'Windows 7 or Windows Server 2008 R2',
+    'Windows 8');
+
+  VER_SUITE_BACKOFFICE     = $00000004; // Microsoft BackOffice components are installed.
+  VER_SUITE_BLADE          = $00000400; // Windows Server 2003, Web Edition is installed.
+  VER_SUITE_COMPUTE_SERVER = $00004000; // Windows Server 2003, Compute Cluster Edition is installed.
+  VER_SUITE_DATACENTER     = $00000080; // Windows Server 2008 Datacenter, Windows Server 2003, Datacenter Edition, or Windows 2000 Datacenter Server is installed.
+  VER_SUITE_ENTERPRISE     = $00000002; // Windows Server 2008 Enterprise, Windows Server 2003, Enterprise Edition, or Windows 2000 Advanced Server is installed. Refer to the Remarks section for more information about this bit flag.
+  VER_SUITE_EMBEDDEDNT     = $00000040; // Windows XP Embedded is installed.
+  VER_SUITE_PERSONAL       = $00000200; // Windows Vista Home Premium, Windows Vista Home Basic, or Windows XP Home Edition is installed.
+  VER_SUITE_SINGLEUSERTS   = $00000100; // Remote Desktop is supported, but only one interactive session is supported. This value is set unless the system is running in application server mode.
+  VER_SUITE_SMALLBUSINESS  = $00000001; // Microsoft Small Business Server was once installed on the system, but may have been upgraded to another version of Windows. Refer to the Remarks section for more information about this bit flag.
+  VER_SUITE_SMALLBUSINESS_RESTRICTED
+                           = $00000020; // Microsoft Small Business Server is installed with the restrictive client license in force. Refer to the Remarks section for more information about this bit flag.
+  VER_SUITE_STORAGE_SERVER = $00002000; // Windows Storage Server 2003 R2 or Windows Storage Server 2003is installed.
+  VER_SUITE_TERMINAL       = $00000010; // Terminal Services is installed. This value is always set.
+  VER_SUITE_WH_SERVER      = $00008000; // Windows Home Server is installed.
+
+  VER_NT_DOMAIN_CONTROLLER = $0000002; // The system is a domain controller and the operating system is Windows Server 2008, Windows Server 2003, or Windows 2000 Server.
+  VER_NT_SERVER            = $0000003; // The operating system is Windows Server 2008, Windows Server 2003, or Windows 2000 Server.
+                                       // Note that a server that is also a domain controller is reported as VER_NT_DOMAIN_CONTROLLER, not VER_NT_SERVER.
+  VER_NT_WORKSTATION       = $0000001; // The operating system is Windows Vista, Windows XP Professional, Windows XP Home Edition, or Windows 2000 Professional.
+
+type
+  {$IFNDEF Unicode}
+  _OSVERSIONINFOEXA = record
+    dwOSVersionInfoSize: DWORD;
+    dwMajorVersion: DWORD;
+    dwMinorVersion: DWORD;
+    dwBuildNumber: DWORD;
+    dwPlatformId: DWORD;
+    szCSDVersion: array[0..127] of AnsiChar; { Maintenance AnsiString for PSS usage }
+    wServicePackMajor: WORD;
+    wServicePackMinor: WORD;
+    wSuiteMask: WORD;
+    wProductType: BYTE;
+    wReserved: BYTE;
+  end;
+  {$EXTERNALSYM _OSVERSIONINFOEXA}
+  _OSVERSIONINFOEXW = record
+    dwOSVersionInfoSize: DWORD;
+    dwMajorVersion: DWORD;
+    dwMinorVersion: DWORD;
+    dwBuildNumber: DWORD;
+    dwPlatformId: DWORD;
+    szCSDVersion: array[0..127] of WideChar; { Maintenance WideString for PSS usage }
+    wServicePackMajor: WORD;
+    wServicePackMinor: WORD;
+    wSuiteMask: WORD;
+    wProductType: BYTE;
+    wReserved: BYTE;
+  end;
+  {$EXTERNALSYM _OSVERSIONINFOExW}
+  _OSVERSIONINFEXO = _OSVERSIONINFOEXA;
+  TOSVersionInfoExA = _OSVERSIONINFOEXA;
+  TOSVersionInfoExW = _OSVERSIONINFOEXW;
+  TOSVersionInfoEx = TOSVersionInfoExA;
+  OSVERSIONINFOEXA = _OSVERSIONINFOEXA;
+  {$EXTERNALSYM OSVERSIONINFOEXA}
+  {$EXTERNALSYM OSVERSIONINFOEX}
+  OSVERSIONINFOEXW = _OSVERSIONINFOEXW;
+  {$EXTERNALSYM OSVERSIONINFOEXW}
+  {$EXTERNALSYM OSVERSIONINFOEX}
+  OSVERSIONINFOEX = OSVERSIONINFOEXA;
+  {$ENDIF}
+
+  {$IFNDEF DSiNeedStartupInfo}
+  _STARTUPINFOW = record
+    cb: DWORD;
+    lpReserved: PWideChar;
+    lpDesktop: PWideChar;
+    lpTitle: PWideChar;
+    dwX: DWORD;
+    dwY: DWORD;
+    dwXSize: DWORD;
+    dwYSize: DWORD;
+    dwXCountChars: DWORD;
+    dwYCountChars: DWORD;
+    dwFillAttribute: DWORD;
+    dwFlags: DWORD;
+    wShowWindow: Word;
+    cbReserved2: Word;
+    lpReserved2: PByte;
+    hStdInput: THandle;
+    hStdOutput: THandle;
+    hStdError: THandle;
+  end;
+  TStartupInfoW = _STARTUPINFOW;
+  PStartupInfoW = ^TStartupInfoW;
+  TStartupInfoA = TStartupInfo;
+  {$ENDIF DSiNeedStartupInfo}
+
+  _LOGICAL_PROCESSOR_RELATIONSHIP = (RelationProcessorCore{ = 0}, RelationNumaNode{ = 1}, RelationCache{ = 2}, RelationProcessorPackage{ = 3}, RelationGroup{ = 4}, RelationAll = $FFFF);
+  {$EXTERNALSYM _LOGICAL_PROCESSOR_RELATIONSHIP}
+  LOGICAL_PROCESSOR_RELATIONSHIP = _LOGICAL_PROCESSOR_RELATIONSHIP;
+  {$EXTERNALSYM LOGICAL_PROCESSOR_RELATIONSHIP}
+  TLogicalProcessorRelationship = LOGICAL_PROCESSOR_RELATIONSHIP;
+
+  _PROCESSOR_CACHE_TYPE = (CacheUnified{ = 0}, CacheInstruction{ = 1}, CacheData{ = 2}, CacheTrace{ = 3});
+  {$EXTERNALSYM _PROCESSOR_CACHE_TYPE}
+  PROCESSOR_CACHE_TYPE = _PROCESSOR_CACHE_TYPE;
+  {$EXTERNALSYM PROCESSOR_CACHE_TYPE}
+  TProcessorCacheType = PROCESSOR_CACHE_TYPE;
+
+  _CACHE_DESCRIPTOR = record
+    Level: BYTE;
+    Associativity: BYTE;
+    LineSize: WORD;
+    Size: DWORD;
+    _Type: PROCESSOR_CACHE_TYPE;
+  end;
+  {$EXTERNALSYM _CACHE_DESCRIPTOR}
+  CACHE_DESCRIPTOR = _CACHE_DESCRIPTOR;
+  {$EXTERNALSYM CACHE_DESCRIPTOR}
+  PCACHE_DESCRIPTOR = ^_CACHE_DESCRIPTOR;
+  {$EXTERNALSYM PCACHE_DESCRIPTOR}
+  TCacheDescriptor = _CACHE_DESCRIPTOR;
+  PCacheDescriptor = PCACHE_DESCRIPTOR;
+
+  _SYSTEM_LOGICAL_PROCESSOR_INFORMATION = record
+    ProcessorMask: ULONG_PTR;
+    Relationship: LOGICAL_PROCESSOR_RELATIONSHIP;
+    case Integer of
+      0: (Flags: BYTE); // ProcessorCore
+      1: (NodeNumber: DWORD); // NumaNode
+      2: (Cache: CACHE_DESCRIPTOR); //Cache
+      3: (Reserved: array [0..1] of ULONGLONG);
+  end;
+  {$EXTERNALSYM _SYSTEM_LOGICAL_PROCESSOR_INFORMATION}
+  SYSTEM_LOGICAL_PROCESSOR_INFORMATION = _SYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+  {$EXTERNALSYM SYSTEM_LOGICAL_PROCESSOR_INFORMATION}
+  PSYSTEM_LOGICAL_PROCESSOR_INFORMATION = ^SYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+  {$EXTERNALSYM PSYSTEM_LOGICAL_PROCESSOR_INFORMATION}
+  TSystemLogicalProcessorInformation = SYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+  PSystemLogicalProcessorInformation = PSYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+  TSystemLogicalProcessorInformationArr = array of TSystemLogicalProcessorInformation;
+
+// Imagehlp.dll
+const
+  CERT_SECTION_TYPE_ANY = $FF;      // Any Certificate type
+
+// Crypt32.dll
+const
+  CERT_NAME_SIMPLE_DISPLAY_TYPE = 4;
+  PKCS_7_ASN_ENCODING = $00010000;
+  X509_ASN_ENCODING = $00000001;
+
+type
+  PCCERT_CONTEXT = type Pointer;
+  HCRYPTPROV_LEGACY = type Pointer;
+  PFN_CRYPT_GET_SIGNER_CERTIFICATE = type Pointer;
+
+  CRYPT_VERIFY_MESSAGE_PARA = record
+    cbSize: DWORD;
+    dwMsgAndCertEncodingType: DWORD;
+    hCryptProv: HCRYPTPROV_LEGACY;
+    pfnGetSignerCertificate: PFN_CRYPT_GET_SIGNER_CERTIFICATE;
+    pvGetArg: Pointer;
+  end;
+
+// WinTrust.dll
+const
+  WINTRUST_ACTION_GENERIC_VERIFY_V2: TGUID = '{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}';
+  WTD_CHOICE_FILE = 1;
+  WTD_REVOKE_NONE = 0;
+  WTD_UI_NONE = 2;
+
+type
+  PWinTrustFileInfo = ^TWinTrustFileInfo;
+  TWinTrustFileInfo = record
+    cbStruct: DWORD;                    // = sizeof(WINTRUST_FILE_INFO)
+    pcwszFilePath: PWideChar;           // required, file name to be verified
+    hFile: THandle;                     // optional, open handle to pcwszFilePath
+    pgKnownSubject: PGUID;              // optional: fill if the subject type is known
+  end;
+
+  PWinTrustData = ^TWinTrustData;
+  TWinTrustData = record
+    cbStruct: DWORD;
+    pPolicyCallbackData: Pointer;
+    pSIPClientData: Pointer;
+    dwUIChoice: DWORD;
+    fdwRevocationChecks: DWORD;
+    dwUnionChoice: DWORD;
+    pFile: PWinTrustFileInfo;
+    dwStateAction: DWORD;
+    hWVTStateData: THandle;
+    pwszURLReference: PWideChar;
+    dwProvFlags: DWORD;
+    dwUIContext: DWORD;
+  end;
 
   function  DSiGetAppCompatFlags(const exeName: string): string;
   function  DSiGetBootType: TDSiBootType;
@@ -743,6 +1232,7 @@ const
   function  DSiGetEnvironmentVariable(const envVarName: string): string;
   function  DSiGetFolderLocation(const CSIDL: integer): string;
   procedure DSiGetKeyboardLayouts(layouts: TStrings);
+  function  DSiGetLogicalProcessorInfo(var info: TSystemLogicalProcessorInformationArr): boolean;
   function  DSiGetMyDocumentsFolder: string;
   function  DSiGetProgramFilesFolder: string;
   function  DSiGetRegisteredOwner: string;
@@ -757,21 +1247,117 @@ const
   function  DSiInitFontToSystemDefault(aFont: TFont; aElement: TDSiUIElement): boolean;
   function  DSiIsAdmin: boolean;
   function  DSiIsAdminLoggedOn: boolean;
+  function  DSiIsCodeSigned(const exeFileName: string; var certName: AnsiString): boolean;
   function  DSiIsDiskInDrive(disk: char): boolean;
   function  DSiIsWinNT: boolean;
   function  DSiIsWow64: boolean;
+  function  DSiVerifyPassword(const username, password: string;
+    const domain: string = '.'): boolean;
 
 { Install }
 
+const // Firewall management constants.
+  // NET_FW_IP_PROTOCOL
+  NET_FW_IP_PROTOCOL_TCP = 6;
+  NET_FW_IP_PROTOCOL_UDP = 17;
+
+  // NET_FW_IP_VERSION
+  NET_FW_IP_VERSION_V4  = 0;
+  NET_FW_IP_VERSION_V6  = 1;
+  NET_FW_IP_VERSION_ANY = 2;
+
+  // NET_FW_POLICY_TYPE
+  NET_FW_POLICY_GROUP     = 0;
+  NET_FW_POLICY_LOCAL     = 1;
+  NET_FW_POLICY_EFFECTIVE = 2;
+
+  // NET_FW_PROFILE_TYPE
+  NET_FW_PROFILE_DOMAIN   = 0;
+  NET_FW_PROFILE_STANDARD = 1;
+  NET_FW_PROFILE_CURRENT  = 2;
+
+  // NET_FW_SCOPE
+  NET_FW_SCOPE_ALL          = 0;
+  NET_FW_SCOPE_LOCAL_SUBNET = 1;
+  NET_FW_SCOPE_CUSTOM       = 2;
+
+  // NET_FW_SERVICE_TYPE 
+  NET_FW_SERVICE_FILE_AND_PRINT = 0;
+  NET_FW_SERVICE_UPNP           = 1;
+  NET_FW_SERVICE_REMOTE_DESKTOP = 2;
+  NET_FW_SERVICE_NONE           = 3;
+
+  // NET_FW_ACTION
+  NET_FW_ACTION_BLOCK = 0;
+  NET_FW_ACTION_ALLOW = 1;
+
+  // NET_FW_EDGE_TRAVERSAL_TYPE
+  NET_FW_EDGE_TRAVERSAL_TYPE_DENY          = 0;
+  NET_FW_EDGE_TRAVERSAL_TYPE_ALLOW         = 1;
+  NET_FW_EDGE_TRAVERSAL_TYPE_DEFER_TO_APP  = 2;
+  NET_FW_EDGE_TRAVERSAL_TYPE_DEFER_TO_USER = 3;
+
+  // NET_FW_MODIFY_STATE
+  NET_FW_MODIFY_STATE_OK              = 0;
+  NET_FW_MODIFY_STATE_GP_OVERRIDE     = 1;
+  NET_FW_MODIFY_STATE_INBOUND_BLOCKED = 2;
+
+  // NET_FW_PROFILE_TYPE2
+  NET_FW_PROFILE2_DOMAIN  = 1;
+  NET_FW_PROFILE2_PRIVATE = 2;
+  NET_FW_PROFILE2_PUBLIC  = 4;
+  NET_FW_PROFILE2_ALL     = $7FFFFFFF;
+
+  // NET_FW_RULE_CATEGORY
+  NET_FW_RULE_CATEGORY_BOOT       = 0;
+  NET_FW_RULE_CATEGORY_STEALTH    = 1;
+  NET_FW_RULE_CATEGORY_FIREWALL   = 2;
+  NET_FW_RULE_CATEGORY_CONSEC     = 3;
+  NET_FW_RULE_CATEGORY_MAX        = 4;
+
+  // NET_FW_RULE_DIRECTION
+  NET_FW_RULE_DIR_IN    = 0;
+  NET_FW_RULE_DIR_OUT   = 1;
+
+type // Firewall management types
+  TDSiFwIPProtocol = (fwProtoTCP, fwProtoUDP);
+  TDSiFwIPProtocols = set of TDSiFwIPProtocol;
+
+  TDSiFwIPProfile = (fwProfileDomain, fwProfilePrivate, fwProfilePublic, fwProfileAll,
+    fwProfileCurrent);
+  TDSiFwIPProfiles = set of TDSiFwIPProfile;
+
+  TDSiFwResolveConflict = (rcDuplicate, rcOverwrite, rcSkip); 
+
+  function  DSiAddApplicationToFirewallExceptionList(const entryName,
+    applicationFullPath: string; resolveConflict: TDSiFwResolveConflict = rcDuplicate;
+    description: string = ''; grouping: string = '';
+    serviceName: string = ''; protocols: TDSiFwIPProtocols = [fwProtoTCP];
+    localPorts: string = '*'; profiles: TDSiFwIPProfiles = [fwProfileAll]): boolean;
+  function  DSiAddApplicationToFirewallExceptionListAdvanced(const entryName,
+    applicationFullPath: string; resolveConflict: TDSiFwResolveConflict = rcDuplicate;
+    description: string = ''; grouping: string = '';
+    serviceName: string = ''; protocols: TDSiFwIPProtocols = [fwProtoTCP];
+    localPorts: string = '*'; profiles: TDSiFwIPProfiles = [fwProfileAll]): boolean;
+  function  DSiAddApplicationToFirewallExceptionListXP(const entryName,
+    applicationFullPath: string; resolveConflict: TDSiFwResolveConflict = rcDuplicate;
+    profile: TDSiFwIPProfile = fwProfileCurrent): boolean;
+  function  DSiAddPortToFirewallExceptionList(const entryName: string;
+    portNumber: cardinal): boolean;
   function  DSiAddUninstallInfo(const displayName, uninstallCommand, publisher,
     URLInfoAbout, displayVersion, helpLink, URLUpdateInfo: string): boolean;
   function  DSiAutoRunApp(const applicationName, applicationPath: string;
     enabled: boolean = true): boolean;
   procedure DSiCreateShortcut(const fileName, displayName, parameters: string;
-    folder: integer = CSIDL_STARTUP; const workDir: string = '');
+    folder: integer= CSIDL_STARTUP; const workDir: string = '');
   function  DSiDeleteShortcut(const displayName: string;
     folder: integer = CSIDL_STARTUP): boolean;
   procedure DSiEditShortcut(const lnkName, fileName, workDir, parameters: string);
+  function  DSiFindApplicationInFirewallExceptionListAdvanced(const entryName: string;
+    var rule: OleVariant): boolean;
+  function  DSiFindApplicationInFirewallExceptionListXP(const entryName: string;
+    var application: OleVariant; profile: TDSiFwIPProfile = fwProfileCurrent): boolean;
+  function  DSiGetLogonSID(token: THandle; var logonSID: PSID): boolean;
   function  DSiGetShortcutInfo(const lnkName: string; var fileName, filePath, workDir,
     parameters: string): boolean;
   function  DSiGetUninstallInfo(const displayName: string;
@@ -780,6 +1366,12 @@ const
   function  DSiRegisterActiveX(const fileName: string; registerDLL: boolean): HRESULT;
   procedure DSiRegisterRunOnce(const applicationName,
     applicationPath: string);
+  function  DSiRemoveApplicationFromFirewallExceptionList(const entryName,
+    applicationFullPath: string): boolean;
+  function  DSiRemoveApplicationFromFirewallExceptionListAdvanced(const entryName: string): boolean;
+  function  DSiRemoveApplicationFromFirewallExceptionListXP(const applicationFullPath: string): boolean; overload;
+  function  DSiRemoveApplicationFromFirewallExceptionListXP(const applicationFullPath: string;
+    profile: TDSiFwIPProfile): boolean; overload;
   procedure DSiRemoveRunOnce(const applicationName: string);
   function  DSiRemoveUninstallInfo(const displayName: string): boolean;
   function  DSiShortcutExists(const displayName: string;
@@ -817,10 +1409,13 @@ type
     property OnTimer: TNotifyEvent read dtOnTimer write SetOnTimer;
   end; { TDSiTimer }
 
+  function  DSiDateTimeToFileTime(dateTime: TDateTime; var fileTime: TFileTime): boolean;
   //Following three functions are based on GetTickCount
   function  DSiElapsedSince(midTime, startTime: int64): int64;
   function  DSiElapsedTime(startTime: int64): int64;
-  function  DSiHasElapsed(startTime: int64; timeout: DWORD): boolean;
+  function  DSiElapsedTime64(startTime: int64): int64;
+  function  DSiHasElapsed(startTime: int64; timeout_ms: DWORD): boolean;
+  function  DSiHasElapsed64(startTime: int64; timeout_ms: DWORD): boolean;
 
   function  DSiFileTimeToDateTime(fileTime: TFileTime): TDateTime; overload;
   function  DSiFileTimeToDateTime(fileTime: TFileTime; var dateTime: TDateTime): boolean; overload;
@@ -853,6 +1448,11 @@ type
     buffer: pointer; size: word): integer; stdcall;
   function  DSi9xNetShareDel(serverName: PChar; netName: PChar;
     reserved: word): integer; stdcall;
+  function  DSiCertCreateCertificateContext(dwCertEncodingType: DWORD;
+    pbCertEncoded: PBYTE; cbCertEncoded: DWORD): PCCERT_CONTEXT; stdcall;
+  function  DSiCertFreeCertificateContext(pCertContext: PCCERT_CONTEXT): BOOL; stdcall;
+  function  DSiCertGetNameStringA(pCertContext: PCCERT_CONTEXT; dwType: DWORD; dwFlags: DWORD;
+    pvTypePara: Pointer; pszNameString: PAnsiChar; cchNameString: DWORD): DWORD; stdcall;
   function  DSiCloseServiceHandle(hSCObject: SC_HANDLE): BOOL; stdcall;
   function  DSiCreateProcessAsUser(hToken: THandle;
     lpApplicationName, lpCommandLine: PChar; lpProcessAttributes,
@@ -860,23 +1460,47 @@ type
     dwCreationFlags: DWORD; lpEnvironment: pointer;
     lpCurrentDirectory: PChar; const lpStartupInfo: TStartupInfo;
     var lpProcessInformation: TProcessInformation): BOOL; stdcall;
+  function  DSiCreateProcessWithLogonW(lpUsername, lpDomain, lpPassword: PWideChar;
+    dwLogonFlags: DWORD; lpApplicationName, lpCommandLine: PWideChar;
+    dwCreationFlags: DWORD; lpEnvironment: pointer; lpCurrentDirectory: PWideChar;
+    const lpStartupInfo: TStartupInfoW; var lpProcessInformation: TProcessInformation): BOOL;
+  function  DSiCreateEnvironmentBlock(var lpEnvironment: pointer; hToken: THandle;
+    bInherit: BOOL): BOOL;
+  function  DSiCryptVerifyMessageSignature(const pVerifyPara: CRYPT_VERIFY_MESSAGE_PARA;
+    dwSignerIndex: DWORD; pbSignedBlob: PByte; cbSignedBlob: DWORD; pbDecoded: PBYTE;
+    pcbDecoded: PDWORD; ppSignerCert: PCCERT_CONTEXT): BOOL; stdcall; //external 'Crypt32.dll';
+  function  DSiDestroyEnvironmentBlock(lpEnvironment: pointer): BOOL;
   function  DSiDwmEnableComposition(uCompositionAction: UINT): HRESULT; stdcall;
   function  DSiDwmIsCompositionEnabled(var pfEnabled: BOOL): HRESULT; stdcall;
   function  DSiEnumProcessModules(hProcess: THandle; lphModule: PModule; cb: DWORD;
     var lpcbNeeded: DWORD): BOOL; stdcall;
+  function  DSiGetLogicalProcessorInformation(
+    pBuffer: PSYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+    var ReturnLength: DWORD): BOOL; stdcall;
   function  DSiGetModuleFileNameEx(hProcess: THandle; hModule: HMODULE; lpFilename: PChar;
     nSize: DWORD): DWORD; stdcall;
+  function  DSiGetProcAddress(const libFileName, procName: string): FARPROC;
   function  DSiGetProcessImageFileName(hProcess: THandle; lpImageFileName: PChar;
     nSize: DWORD): DWORD; stdcall;
   function  DSiGetProcessMemoryInfo(process: THandle; memCounters: PProcessMemoryCounters;
     cb: DWORD): boolean; stdcall;
+  function  DSiGetTickCount64: int64; stdcall;
+  function  DSiGetUserProfileDirectoryW(hToken: THandle; lpProfileDir: PWideChar;
+    var lpcchSize: DWORD): BOOL; stdcall;
+  function  DSiGlobalMemoryStatusEx(memStatus: PMemoryStatusEx): boolean; stdcall;
+  function  DSiImageEnumerateCertificates(FileHandle: THandle; TypeFilter: WORD;
+    out CertificateCount: DWORD; Indices: PDWORD; IndexCount: Integer): BOOL; stdcall;
+  function  DSiImageGetCertificateData(FileHandle: THandle; CertificateIndex: Integer;
+    Certificate: PWinCertificate; var RequiredLength: DWORD): BOOL; stdcall;
+  function  DSiImageGetCertificateHeader(FileHandle: THandle; CertificateIndex: Integer;
+    var CertificateHeader: TWinCertificate): BOOL; stdcall;
   function  DSiImpersonateLoggedOnUser(hToken: THandle): BOOL; stdcall;
   function  DSiIsWow64Process(hProcess: THandle; var wow64Process: BOOL): BOOL; stdcall;
   function  DSiLogonUser(lpszUsername, lpszDomain, lpszPassword: PChar;
     dwLogonType, dwLogonProvider: DWORD; var phToken: THandle): BOOL; stdcall;
   function  DSiNetApiBufferFree(buffer: pointer): cardinal; stdcall;
   function  DSiNetWkstaGetInfo(servername: PChar; level: cardinal;
-    out bufptr: Pointer): cardinal; stdcall;
+    out bufptr: pointer): cardinal; stdcall;
   function  DSiNTNetShareAdd(serverName: PChar; level: integer; buf: PChar;
     var parm_err: integer): DWord; stdcall;
   function  DSiNTNetShareDel(serverName: PChar; netName: PWideChar;
@@ -889,20 +1513,32 @@ type
     disableWakeEvent: BOOL = false): BOOL; stdcall;
   function  DSiSHEmptyRecycleBin(Wnd: HWND; pszRootPath: PChar;
     dwFlags: DWORD): HRESULT; stdcall;
+  function  DSiWinVerifyTrust(hwnd: HWND; const ActionID: TGUID;
+    ActionData: Pointer): Longint; stdcall;
+  function  DSiWow64DisableWow64FsRedirection(var oldStatus: pointer): BOOL; stdcall;
+  function  DSiWow64RevertWow64FsRedirection(const oldStatus: pointer): BOOL; stdcall;
 
 { Helpers }
 
-{$IFDEF NeedUTF}
+{$IFDEF DSiNeedUTF}
 // UTF <-> 16-bit conversion. Same signature as D7 functions but custom implementation
 // (taken from http://gp.17slon.com/gp/gptextstream.htm with permission).
 
 type
   UTF8String = type string;
   PUTF8String = ^UTF8String;
-  
+
 function UTF8Encode(const ws: WideString): UTF8String;
 function UTF8Decode(const sUtf: UTF8String): WideString;
-{$ENDIF NeedUTF}
+{$ENDIF DSiNeedUTF}
+
+{ internals used in inline functions }
+
+type
+  TInterlockedCompareExchange64 = function(destination: pointer; exchange, comparand: int64): int64; stdcall;
+
+var
+  GInterlockedCompareExchange64: TInterlockedCompareExchange64 = nil;
 
 implementation
 
@@ -910,44 +1546,115 @@ uses
   Types,
   ComObj,
   ActiveX,
-  FileCtrl,
   {$IFDEF CONDITIONALCOMPILATION}
   Variants,
   {$ENDIF}
   TLHelp32,
   MMSystem;
 
+const
+  CAPISuffix = {$IFDEF Unicode}'W'{$ELSE}'A'{$ENDIF};
+
 type
+  IRestoreLastError = interface
+  end; { IRestoreLastError }
+
+  TRestoreLastError = class(TInterfacedObject, IRestoreLastError)
+  private
+    rleLastError: DWORD;
+  public
+    constructor Create;
+    destructor  Destroy; override;
+  end; { TRestoreLastError }
+
+  TBackgroundTask = class
+  private
+    btWaitObject: THandle;
+  public
+    constructor Create(waitObject: THandle);
+    procedure Awaited; virtual; abstract;
+    property WaitObject: THandle read btWaitObject;
+  end; { TBackgroundTask }
+
+  TCleanupAces = class(TBackgroundTask)
+  private
+    caDesktop      : HDESK;
+    caSid          : PSID;
+    caWindowStation: HWINSTA;
+  public
+    constructor Create(waitObject: THandle; windowStation: HWINSTA; desktop: HDESK;
+      sid: PSID);
+    destructor  Destroy; override;
+    procedure Awaited; override;
+  end; { TCleanupAces }
+
+  TBackgroundThread = class(TThread)
+  private
+    btTask: TBackgroundTask;
+  public
+    constructor Create(task: TBackgroundTask);
+    procedure Execute; override;
+  end; { TBackgroundThread }
+
   T9xNetShareAdd = function(serverName: PChar; shareLevel: smallint;
     buffer: pointer; size: word): integer; stdcall;
   T9xNetShareDel = function(serverName: PChar; netName: PChar;
     reserved: word): integer; stdcall;
+  TCertCreateCertificateContext = function(dwCertEncodingType: DWORD;
+    pbCertEncoded: PBYTE; cbCertEncoded: DWORD): PCCERT_CONTEXT; stdcall;
+  TCertFreeCertificateContext = function(pCertContext: PCCERT_CONTEXT): BOOL; stdcall;
+  TCertGetNameStringA = function(pCertContext: PCCERT_CONTEXT; dwType: DWORD; dwFlags: DWORD;
+    pvTypePara: Pointer; pszNameString: PAnsiChar; cchNameString: DWORD): DWORD; stdcall;
   TCloseServiceHandle = function(hSCObject: SC_HANDLE): BOOL; stdcall;
   TCreateProcessAsUser = function(hToken: THandle;
-    lpApplicationName: PAnsiChar; lpCommandLine: PAnsiChar; lpProcessAttributes,
+    lpApplicationName: PChar; lpCommandLine: PChar; lpProcessAttributes,
     lpThreadAttributes: PSecurityAttributes; bInheritHandles: BOOL;
     dwCreationFlags: DWORD; lpEnvironment: pointer;
-    lpCurrentDirectory: PAnsiChar; const lpStartupInfo: TStartupInfo;
+    lpCurrentDirectory: PChar; const lpStartupInfo: TStartupInfo;
     var lpProcessInformation: TProcessInformation): BOOL; stdcall;
+  TCreateProcessWithLogonW = function(lpUsername, lpDomain, lpPassword: PWideChar;
+    dwLogonFlags: DWORD; lpApplicationName, lpCommandLine: PWideChar;
+    dwCreationFlags: DWORD; lpEnvironment: pointer; lpCurrentDirectory: PWideChar;
+    const lpStartupInfo: TStartupInfoW;
+    var lpProcessInformation: TProcessInformation): BOOL; stdcall;
+  TCreateEnvironmentBlock = function(var lpEnvironment: pointer; hToken: THandle;
+    bInherit: BOOL): BOOL; stdcall;
+  TCryptVerifyMessageSignature = function(const pVerifyPara: CRYPT_VERIFY_MESSAGE_PARA;
+    dwSignerIndex: DWORD; pbSignedBlob: PByte; cbSignedBlob: DWORD; pbDecoded: PBYTE;
+    pcbDecoded: PDWORD; ppSignerCert: PCCERT_CONTEXT): BOOL; stdcall;
+  TDestroyEnvironmentBlock = function(lpEnvironment: pointer): BOOL; stdcall;
   TDwmEnableComposition = function(uCompositionAction: UINT): HRESULT; stdcall;
   TDwmIsCompositionEnabled = function(var pfEnabled: BOOL): HRESULT; stdcall;
   TEnumProcessModules = function(hProcess: THandle; lphModule: PModule; cb: DWORD;
     var lpcbNeeded: DWORD): BOOL; stdcall;
   TGetLongPathName = function(lpszShortPath, lpszLongPath: PChar;
     cchBuffer: DWORD): DWORD; stdcall;
+  TGetLogicalProcessorInformation = function(
+    pBuffer: PSYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+    var ReturnLength: DWORD): BOOL; stdcall;
   TGetModuleFileNameEx = function(hProcess: THandle; hModule: HMODULE; lpFilename: PChar;
     nSize: DWORD): DWORD; stdcall;
   TGetProcessImageFileName = function(hProcess: THandle; lpImageFileName: PChar;
     nSize: DWORD): DWORD; stdcall;
   TGetProcessMemoryInfo = function(process: THandle; memCounters: PProcessMemoryCounters;
     cb: DWORD): boolean; stdcall;
+  TGetTickCount64 = function: int64; stdcall;
+  TGetUserProfileDirectoryW = function(hToken: THandle; lpProfileDir: PWideChar;
+    var lpcchSize: DWORD): BOOL; stdcall;
+  TGlobalMemoryStatusEx = function(memStatus: PMemoryStatusEx): boolean; stdcall;
+  TImageEnumerateCertificates = function(FileHandle: THandle; TypeFilter: WORD;
+    out CertificateCount: DWORD; Indices: PDWORD; IndexCount: Integer): BOOL; stdcall;
+  TImageGetCertificateData = function(FileHandle: THandle; CertificateIndex: Integer;
+    Certificate: PWinCertificate; var RequiredLength: DWORD): BOOL; stdcall;
+  TImageGetCertificateHeader = function(FileHandle: THandle; CertificateIndex: Integer;
+    var CertificateHeader: TWinCertificate): BOOL; stdcall;
   TImpersonateLoggedOnUser = function(hToken: THandle): BOOL; stdcall;
   TIsWow64Process = function(hProcess: THandle; var wow64Process: BOOL): BOOL; stdcall;
   TLogonUser = function(lpszUsername, lpszDomain, lpszPassword: LPCSTR;
     dwLogonType, dwLogonProvider: DWORD; var phToken: THandle): BOOL; stdcall;
   TNetApiBufferFree = function(buffer: pointer): cardinal; stdcall;
   TNetWkstaGetInfo = function(servername: PChar; level: cardinal;
-    out bufptr: Pointer): cardinal; stdcall;
+    out bufptr: pointer): cardinal; stdcall;
   TNTNetShareAdd = function(serverName: PChar; level: integer; buf: PChar;
     var parm_err: integer): DWord; stdcall;
   TNTNetShareDel = function(serverName: PChar; netName: PWideChar;
@@ -959,19 +1666,37 @@ type
   TSetSuspendState = function(hibernate, forceCritical, disableWakeEvent: BOOL): BOOL; stdcall;
   TSHEmptyRecycleBin = function(wnd: HWND; pszRootPath: PChar;
     dwFlags: DWORD): HRESULT; stdcall;
+  TWinVerifyTrust = function(hwnd: HWND; const ActionID: TGUID;
+    ActionData: Pointer): Longint; stdcall;
+  TWow64DisableWow64FsRedirection = function(var oldStatus: pointer): BOOL; stdcall;
+  TWow64RevertWow64FsRedirection = function(const oldStatus: pointer): BOOL; stdcall;
 
 const
   G9xNetShareAdd: T9xNetShareAdd = nil;
   G9xNetShareDel: T9xNetShareDel = nil;
+  GCertCreateCertificateContext: TCertCreateCertificateContext = nil;
+  GCertFreeCertificateContext: TCertFreeCertificateContext = nil;
+  GCertGetNameStringA: TCertGetNameStringA = nil;
   GCloseServiceHandle: TCloseServiceHandle = nil;
   GCreateProcessAsUser: TCreateProcessAsUser = nil;
+  GCreateProcessWithLogonW: TCreateProcessWithLogonW = nil;
+  GCreateEnvironmentBlock: TCreateEnvironmentBlock = nil;
+  GCryptVerifyMessageSignature: TCryptVerifyMessageSignature = nil;
+  GDestroyEnvironmentBlock: TDestroyEnvironmentBlock = nil;
   GDwmEnableComposition: TDwmEnableComposition = nil;
   GDwmIsCompositionEnabled: TDwmIsCompositionEnabled = nil;
   GEnumProcessModules: TEnumProcessModules = nil;
+  GGetLogicalProcessorInformation: TGetLogicalProcessorInformation = nil;
   GGetModuleFileNameEx: TGetModuleFileNameEx = nil;
   GGetLongPathName: TGetLongPathName = nil;
   GGetProcessImageFileName: TGetProcessImageFileName = nil;
   GGetProcessMemoryInfo: TGetProcessMemoryInfo = nil;
+  GGetTickCount64: TGetTickCount64 = nil;
+  GGetUserProfileDirectoryW: TGetUserProfileDirectoryW = nil;
+  GGlobalMemoryStatusEx: TGlobalMemoryStatusEx = nil;
+  GImageEnumerateCertificates: TImageEnumerateCertificates = nil;
+  GImageGetCertificateData: TImageGetCertificateData = nil;
+  GImageGetCertificateHeader: TImageGetCertificateHeader = nil;
   GImpersonateLoggedOnUser: TImpersonateLoggedOnUser = nil;
   GIsWow64Process: TIsWow64Process = nil;
   GLogonUser: TLogonUser = nil;
@@ -984,10 +1709,18 @@ const
   GSetDllDirectory: TSetDllDirectory = nil;
   GSetSuspendState: TSetSuspendState = nil;
   GSHEmptyRecycleBin: TSHEmptyRecycleBin = nil;
+  GWinVerifyTrust: TWinVerifyTrust = nil;
+  GWow64DisableWow64FsRedirection: TWow64DisableWow64FsRedirection = nil;
+  GWow64RevertWow64FsRedirection: TWow64RevertWow64FsRedirection = nil;
 
-  function DSiGetProcAddress(const libFileName, procName: string): FARPROC; forward;
+{$IFOPT R+} {$DEFINE RestoreR} {$ELSE} {$UNDEF RestoreR} {$ENDIF}
 
 { Helpers }
+
+  procedure CreateProcessWatchdog(task: TBackgroundTask);
+  begin
+    TBackgroundThread.Create(task);
+  end; { CreateProcessWatchdog }
 
   function FileOpenSafe(fileName: string; var fileHandle: textfile;
     diskRetryDelay, diskRetryCount: integer): boolean;
@@ -1014,7 +1747,7 @@ const
     Result := (dum = 0);
   end; { FileOpenSafe }
 
-{$IFDEF NeedUTF}
+{$IFDEF DSiNeedUTF}
   {:Convers buffer of WideChars into UTF-8 encoded form. Target buffer must be
     pre-allocated and large enough (each WideChar will use at most three bytes
     in UTF-8 encoding).                                                            <br>
@@ -1149,7 +1882,7 @@ const
         div SizeOf(WideChar));
     end;
   end; { UTF8Decode }
-{$ENDIF NeedUTF}
+{$ENDIF DSiNeedUTF}
 
 { Handles }
 
@@ -1292,21 +2025,21 @@ const
     @author  Lee_Nover
     @since   2004-11-29
   }
-  function TDSiRegistry.ReadBinary(const name, defval: string): string;
+  function TDSiRegistry.ReadBinary(const name: string; const defval: RawByteString): RawByteString;
   begin
     try
       if GetDataSize(name) < 0 then
         Abort; // D4 does not generate an exception!
       case GetDataType(name) of
         rdInteger:
-          Result := IntToStr(inherited ReadInteger(name));
+          Result := RawByteString(IntToStr(inherited ReadInteger(name)));
         rdBinary:
           begin
             SetLength(Result, GetDataSize(name));
-            SetLength(Result, ReadBinaryData(name, Pointer(Result)^, Length(Result)));
+            SetLength(Result, ReadBinaryData(name, pointer(Result)^, Length(Result)));
           end; //rdBinary
         else
-          Result := inherited ReadString(name);
+          Result := RawByteString(inherited ReadString(name));
       end;
     except ReadBinary := defval; end;
   end; { TDSiRegistry.ReadBinary }
@@ -1321,7 +2054,7 @@ const
   function TDSiRegistry.ReadBinary(const name: string; dataStream: TStream): boolean;
   var
     i: integer;
-    s: string;
+    s: RawByteString;
   begin
     try
       if GetDataSize(name) < 0 then
@@ -1348,7 +2081,7 @@ const
           end; //rdBinary
         else
           begin
-            s := ReadString(name, '');
+            s := RawByteString(ReadString(name, ''));
             if s <> '' then
               dataStream.Write(s[1], Length(s));
           end; //else
@@ -1363,12 +2096,24 @@ const
     @since   2002-11-25
   }
   function TDSiRegistry.ReadBool(const name: string; defval: boolean): boolean;
+  var
+    sBool: string;
   begin
     try
       if GetDataSize(name) < 0 then
         Abort; // D4 does not generate an exception!
-      ReadBool := inherited ReadBool(name);
-    except ReadBool := defval; end;
+      case GetDataType(name) of
+        rdString:
+          begin
+            sBool := ReadString(name, '');
+            if sBool = '' then
+              Result := defval
+            else
+              Result := SameText(sBool, 'true') or SameText(sBool, 't');
+          end //rdString
+        else Result := inherited ReadBool(name);
+      end;
+    except Result := defval; end;
   end; { TDSiRegistry.ReadBool }
 
   {:Reads date-time from the registry returning default value if name doesn't
@@ -1381,8 +2126,8 @@ const
     try
       if GetDataSize(name) < 0 then
         Abort; // D4 does not generate an exception!
-      ReadDate := inherited ReadDate(name);
-    except ReadDate := defval; end;
+      Result := inherited ReadDate(name);
+    except Result := defval; end;
   end; { TDSiRegistry.ReadDate }
 
   {:Reads TFont from the registry.
@@ -1504,7 +2249,8 @@ const
       varBoolean: Result := ReadBool(name,defval);
       varString : Result := ReadString(name,defval);
       {$IFDEF Unicode}
-      varOleStr : Result := ReadString(name, defval);
+      varOleStr,
+      varUString: Result := ReadString(name, defval);
       {$ELSE}
       varOleStr : Result := UTF8Decode(ReadString(name, UTF8Encode(defval)));
       {$ENDIF Unicode}
@@ -1517,9 +2263,12 @@ const
     @author  Lee_Nover
     @since   2004-11-29
   }
-  procedure TDSiRegistry.WriteBinary(const name, data: string);
+  procedure TDSiRegistry.WriteBinary(const name: string; data: RawByteString);
   begin
-    WriteBinaryData(name, pointer(data)^, Length(data));
+    if data = '' then
+      WriteBinaryData(name, data, 0)
+    else
+      WriteBinaryData(name, data[1], Length(data));
   end; { TDSiRegistry.WriteBinary }
 
   {:Writes stream into binary registry entry.
@@ -1557,11 +2306,15 @@ const
   procedure TDSiRegistry.WriteVariant(const name: string; value: variant);
   begin
     case VarType(value) of
+      varByte,
+      varWord,
+      varLongWord,
       varInteger: WriteInteger(name,value);
       varBoolean: WriteBool(name,value);
       varString : WriteString(name,value);
       {$IFDEF Unicode}
-      varOleStr : WriteString(name, value);
+      varOleStr,
+      varUString: WriteString(name, value);
       {$ELSE}
       varOleStr : WriteString(name,UTF8Encode(value));
       {$ENDIF Unicode}
@@ -1638,13 +2391,32 @@ const
     finally {TRegistry.}Free; end;
   end; { DSiCreateRegistryKey }
 
+  {:Deletes a value from the registry.
+    @author  gabr
+    @since   2009-11-13
+  }
+  function DSiDeleteRegistryValue(const registryKey, name: string; root: HKEY =
+    HKEY_CURRENT_USER; access: longword = KEY_SET_VALUE): boolean;
+  begin
+    Result := false;
+    try
+      with TDSiRegistry.Create(access) do try
+        RootKey := root;
+        if OpenKey(registryKey, true) then try
+          Result := DeleteValue(name);
+        finally CloseKey; end;
+      finally {TDSiRegistry.}Free; end;
+    except end;
+  end; { DSiDeleteRegistryValue }
+
   {:Deletes a key with all subkeys from the registry.
     @author  gabr
     @since   2002-11-25
   }
-  function DSiKillRegistry(const registryKey: string; root: HKEY): boolean;
+  function DSiKillRegistry(const registryKey: string; root: HKEY;
+    access: longword): boolean;
   begin
-    with TRegistry.Create do try
+    with TRegistry.Create(access) do try
       RootKey := root;
       Result := DeleteKey(registryKey);
     finally {TRegistry.}  Free; end;
@@ -1722,11 +2494,11 @@ const
     @since   2002-11-25
   }        
   function DSiWriteRegistry(const registryKey, name: string; value: int64;
-    root: HKEY): boolean; 
+    root: HKEY; access: longword): boolean; 
   begin
     Result := false;
     try
-      with TDSiRegistry.Create do try
+      with TDSiRegistry.Create(access) do try
         RootKey := root;
         if OpenKey(registryKey, true) then try
           WriteInt64(name, value);
@@ -1741,11 +2513,11 @@ const
     @since   2002-11-25
   }        
   function DSiWriteRegistry(const registryKey, name: string; value: Variant;
-    root: HKEY): boolean; 
+    root: HKEY; access: longword): boolean; 
   begin
     Result := false;
     try
-      with TDSiRegistry.Create do try
+      with TDSiRegistry.Create(access) do try
         RootKey := root;
         if OpenKey(registryKey, true) then try
           WriteVariant(name, value);
@@ -1756,6 +2528,20 @@ const
   end; { DSiWriteRegistry }
 
 { Files }
+
+  constructor TDSiFileInfo.Create(const folder: string; searchRec: TSearchRec; depth:
+    integer);
+  begin
+    inherited Create;
+    FFolder := folder;
+  FSearchRec := searchRec;
+  FDepth := depth;
+  end; { TDSiFileInfo.Create }
+
+  function TDSiFileInfo.GetFullName: string;
+  begin
+    Result := FFolder + FSearchRec.Name;
+  end; { TDSiFileInfo.GetFullName }
 
   {:Checks if application can write to a folder.
     @author  gabr
@@ -1807,33 +2593,20 @@ const
     @since   2008-05-05
   }
   function DSiConnectToNetworkResource(const networkResource: string; const mappedLetter:
-    string = ''; const username: string = ''; const password: string = ''): boolean;
+    string; const username: string; const password: string): boolean;
   var
-    bufferSize : DWORD;
     driveName  : string;
+    isAvailable: boolean;
     netResource: TNetResource;
-    remoteName : pointer;
-    wnetResult : integer;
+    remoteName : string;
   begin
     Result := false;
     if mappedLetter <> '' then begin
-      GetMem(remoteName, MAX_PATH+1);
-      try
-        driveName := mappedLetter[1] + ':';
-        wnetResult := GetDriveType(PChar(driveName + '\'));
-        if wnetResult = DRIVE_REMOTE then begin
-          bufferSize := MAX_PATH;
-          wnetResult := WNetGetConnection(PChar(driveName), remoteName, bufferSize);
-          if wnetResult = ERROR_MORE_DATA then begin
-            FreeMem(remoteName);
-            GetMem(remoteName, bufferSize);
-            wnetResult := WNetGetConnection(PChar(driveName), remoteName, bufferSize);
-          end;
-          Result := (wnetResult = NO_ERROR) and (AnsiSameText(networkResource, Trim(PChar(remoteName))));
-          if (not Result) and (wnetResult = NO_ERROR) then
-            WNetCancelConnection2(PChar(driveName), 0, true);
-        end;
-      finally FreeMem(remoteName); end;
+      if DSiGetNetworkResource(mappedLetter[1], remoteName, isAvailable) and (remoteName <> '') then
+        if AnsiSameText(remoteName, networkResource) then
+          Result := true
+        else
+          DSiDisconnectFromNetworkResource(mappedLetter[1]);
     end;
     if not Result then begin
       FillChar(netResource, SizeOf (netResource), 0);
@@ -1841,8 +2614,10 @@ const
       netResource.dwType := RESOURCETYPE_DISK;
       netResource.dwDisplayType := RESOURCEDISPLAYTYPE_SHARE;
       netResource.dwUsage := RESOURCEUSAGE_CONNECTABLE;
-      if mappedLetter <> '' then
-        netResource.lpLocalName := PChar(driveName);
+      if mappedLetter <> '' then begin
+        driveName := mappedLetter + ':'#0;
+        netResource.lpLocalName := PChar(@driveName[1]);
+      end;
       netResource.lpRemoteName := PChar(networkResource);
       Result := (WNetAddConnection2(netResource, PChar(password), PChar(username), 0) = NO_ERROR);
     end;
@@ -1873,7 +2648,7 @@ const
     aborted := fileOp.fAnyOperationsAborted;
   end; { DSiCopyFileAnimated }
 
-  {:Creates folder with the unique name under the temporary folder.
+  {:Creates folder with the unique name under the temporary folder and returns its name.
     @author  Miha-R
     @since   2002-11-25
   }
@@ -1947,31 +2722,35 @@ const
   // deletes itself, then run it as an invisible console app with low priority.
   var
     bat    : text;
-    tmpFile: string;
-    si     : TStartupInfo;
     pi     : TProcessInformation;
+    si     : TStartupInfo;
+    tmpFile: string;
+    winTemp: string;
   begin
     Result := false;
     try
-      tmpFile := ChangeFileExt(DSiGetTempFileName('wt'),'.bat');
-      if tmpFile <> '' then begin
-        Assign(bat,tmpFile);
+      winTemp := DSiGetTempFileName('wt');
+      if winTemp <> '' then begin
+        tmpFile := ChangeFileExt(winTemp, '.bat');
+        MoveFile(PChar(winTemp), PChar(tmpFile));
+        Assign(bat, tmpFile);
         Rewrite(bat);
         Writeln(bat,':repeat');
-        Writeln(bat,'del "',fileName,'"');
-        Writeln(bat,'if exist "',fileName,'" goto repeat');
-        if rmDir
-          then Writeln(bat,'rmdir "',ExtractFilePath(fileName),'"');
-        Writeln(bat,'del ',tmpFile);
+        Writeln(bat, 'del "', fileName, '"');
+        Writeln(bat, 'if exist "', fileName, '" goto repeat');
+        if rmDir then
+          Writeln(bat,'rmdir "', ExtractFilePath(fileName), '"');
+        Writeln(bat,'del "', tmpFile, '"');
         Close(bat);
-        FillChar(si,SizeOf(si),0);
+        FillChar(si, SizeOf(si), 0);
         si.cb := SizeOf(si);
         si.dwFlags := STARTF_USESHOWWINDOW;
         si.wShowWindow := SW_HIDE;
+        {$IFDEF Unicode}UniqueString(tmpFile);{$ENDIF Unicode}
         if (CreateProcess(nil, PChar(tmpFile), nil, nil, false,
           CREATE_SUSPENDED or IDLE_PRIORITY_CLASS, nil,
-          PChar(ExtractFilePath(tmpFile)), si, pi))
-        then begin
+          PChar(ExtractFilePath(tmpFile)), si, pi)) then
+        begin
           SetThreadPriority(pi.hThread, THREAD_PRIORITY_IDLE);
           CloseHandle(pi.hProcess);
           ResumeThread(pi.hThread);
@@ -1993,6 +2772,36 @@ const
     code := GetFileAttributesW(PWideChar(directory));
     Result := (code <> -1) and ((FILE_ATTRIBUTE_DIRECTORY AND code) <> 0);
   end; { DSiDirectoryExistsW }
+
+  {:Try to disable WOW64 file system redirection if running on 64-bit Windows.
+    Always succeeds on 32-bit windows.
+    @author  gabr
+    @since   2009-03-17
+  }
+  function DSiDisableWow64FsRedirection(var oldStatus: pointer): boolean;
+  begin
+    if DSiIsWow64 then
+      Result := DSiWow64DisableWow64FsRedirection(oldStatus)
+    else
+      Result := true;
+  end; { DSiDisableWow64FsRedirection }
+
+  {:Disconnects mapped letter.
+    @author  gabr
+    @since   2009-01-28
+  }
+  function DSiDisconnectFromNetworkResource(mappedLetter: char;
+    updateProfile: boolean): boolean;
+  var
+    driveName: string;
+    flags    : cardinal;
+  begin
+    driveName := mappedLetter + ':'#0;
+    flags := 0;
+    if updateProfile then
+      flags := CONNECT_UPDATE_PROFILE;
+    Result := (WNetCancelConnection2(PChar(@driveName[1]), flags, true) = NO_ERROR);
+  end; { DSiDisconnectFromNetworkResource }
 
   {gp}
   function DSiEjectMedia(deviceLetter: char): boolean;
@@ -2054,13 +2863,14 @@ const
 
   procedure _DSiEnumFilesEx(const folder, fileMask: string; attr: integer; enumSubfolders:
     boolean; enumCallback: TDSiEnumFilesExCallback; var totalFiles: integer; var stopEnum:
-    boolean; fileList: TStrings; storeFullPath: boolean; currentDepth, maxDepth: integer);
+    boolean; fileList: TStrings; fileObjectList: TObjectList; storeFullPath: boolean;
+    currentDepth, maxDepth: integer);
   var
     err: integer;
     s  : TSearchRec;
   begin
     if enumSubfolders and ((maxDepth <= 0) or (currentDepth < maxDepth)) then begin
-      err := FindFirst(folder+'*.*',faDirectory,S);
+      err := FindFirst(folder+'*.*', faDirectory or (attr and faHidden), S);
       if err = 0 then try
         repeat
           if (S.Attr and faDirectory) <> 0 then
@@ -2075,9 +2885,11 @@ const
                   fileList.Add(folder + S.Name + '\')
                 else
                   fileList.Add(S.Name + '\');
+              if assigned(fileObjectList) then
+                fileObjectList.Add(TDSiFileInfo.Create(folder, S, currentDepth));
               _DSiEnumFilesEx(folder+S.Name+'\', fileMask, attr, enumSubfolders,
-                enumCallback, totalFiles, stopEnum, fileList, storeFullPath,
-                currentDepth + 1, maxDepth);
+                enumCallback, totalFiles, stopEnum, fileList, fileObjectList,
+                storeFullPath, currentDepth + 1, maxDepth);
             end;
           err := FindNext(S);
         until (err <> 0) or stopEnum;
@@ -2095,6 +2907,8 @@ const
             fileList.Add(folder + S.Name)
           else
             fileList.Add(S.Name);
+        if assigned(fileObjectList) then
+          fileObjectList.Add(TDSiFileInfo.Create(folder, S, currentDepth));
         Inc(totalFiles);
         err := FindNext(S);
       until (err <> 0) or stopEnum;
@@ -2122,7 +2936,7 @@ const
     Result := 0;
     stopEnum := false;
     _DSiEnumFilesEx(folder, mask, attr, enumSubfolders, enumCallback, Result, stopEnum,
-      nil, false, 1, maxEnumDepth);
+      nil, nil, false, 1, maxEnumDepth);
   end; { DSiEnumFilesEx }
 
   {:Enumerates files (optionally in subfolders) and stores results into caller-provided
@@ -2145,8 +2959,32 @@ const
       folder := IncludeTrailingBackslash(folder);
     stopEnum := false;
     _DSiEnumFilesEx(folder, mask, attr, enumSubfolders, nil, totalFiles, stopEnum,
-      fileList, storeFullPath, 1, maxEnumDepth);
+      fileList, nil, storeFullPath, 1, maxEnumDepth);
   end; { DSiEnumFilesToSL }
+
+  {:Enumerates files (optionally in subfolders) and stores TDSiFileInfo objects into
+    caller-provided TObjectList.
+    @since   2012-05-16
+  }
+  procedure DSiEnumFilesToOL(const fileMask: string; attr: integer;
+    fileList: TObjectList {of TDSiFileInfo};
+    enumSubfolders: boolean; maxEnumDepth: integer);
+  var
+    folder    : string;
+    mask      : string;
+    stopEnum  : boolean;
+    totalFiles: integer;
+  begin
+    fileList.Clear;
+    mask := fileMask;
+    folder := ExtractFilePath(mask);
+    Delete(mask, 1, Length(folder));
+    if folder <> '' then
+      folder := IncludeTrailingBackslash(folder);
+    stopEnum := false;
+    _DSiEnumFilesEx(folder, mask, attr, enumSubfolders, nil, totalFiles, stopEnum,
+      nil, fileList, true{ignored}, 1, maxEnumDepth);
+  end; { DSiEnumFilesToOL }
 
   {:Wide version of SysUtils.FileExists.
     @author  gabr
@@ -2170,7 +3008,7 @@ const
     fExt: string;
   begin
     fExt := ExtractFileExt(fileName);
-    if (Length(extension) = 0) or (extension[1] <> '.') then
+    if (Length(extension) = 0) or (extension[1] <> '.') and (fExt <> '') and (fExt[1] = '.') then
       Delete(fExt, 1, 1);
     Result := SameText(fExt, extension);
   end; { DSiFileExtensionIs }
@@ -2183,12 +3021,27 @@ const
   function DSiFileExtensionIs(const fileName: string; extension: array of string):
     boolean; overload;
   var
-    iExt: integer;
+    fExtDot  : string;
+    fExtNoDot: string;
+    iExt     : integer;
+    testExt  : string;
   begin
     Result := true;
-    for iExt := Low(extension) to High(extension) do
-      if DSiFileExtensionIs(fileName, extension[iExt]) then
-        Exit;
+    fExtDot := ExtractFileExt(fileName);
+    fExtNoDot := fExtDot;
+    if (fExtDot = '') or (fExtDot[1] <> '.') then
+       fExtDot := '.' + fExtDot;
+    if (fExtNoDot <> '') and (fExtNoDot[1] = '.') then
+      Delete(fExtNoDot, 1, 1);
+    for iExt := Low(extension) to High(extension) do begin
+      testExt := extension[iExt];
+      if (Length(testExt) = 0) or (testExt[1] <> '.') then begin
+        if SameText(fExtNoDot, testExt) then
+          Exit
+        else if SameText(fExtDot, testExt) then
+          Exit;
+      end;
+    end;
     Result := false;
   end; { DSiFileExtensionIs }
   
@@ -2294,9 +3147,7 @@ const
         DSiFileTimeToDateTime(fsCreationTime, creationTime) and
         DSiFileTimeToDateTime(fsLastAccessTime, lastAccessTime) and
         DSiFileTimeToDateTime(fsLastModificationTime, lastModificationTime);
-    finally
-      CloseHandle(fileHandle);
-    end;
+    finally CloseHandle(fileHandle); end;
   end; { DSiGetFileTimes }
 
   {:Returns the long pathname representation.
@@ -2306,7 +3157,7 @@ const
   function DSiGetLongPathName(const fileName: string): string;
   begin
     if not assigned(GGetLongPathName) then
-      GGetLongPathName := DSiGetProcAddress('kernel32.dll', 'GetLongPathNameA');
+      GGetLongPathName := DSiGetProcAddress('kernel32.dll', 'GetLongPathName' + CAPISuffix);
     if assigned(GGetLongPathName) then begin
       SetLength(Result, MAX_PATH);
       SetLength(Result, GGetLongPathName(PChar(fileName), PChar(Result), Length(Result)));
@@ -2317,6 +3168,102 @@ const
     end;
   end; { DSiGetLongPathName }
 
+  {:Returns information on mapped network resource.
+    @author  gabr
+    @since   2009-01-28
+  }
+  function DSiGetNetworkResource(mappedLetter: char; var networkResource: string; var
+    connectionIsAvailable: boolean): boolean;
+  var
+    bufferSize: cardinal;
+    driveName : string;
+    remoteName: PChar;
+    wnetResult: integer;
+  begin
+    connectionIsAvailable := false;
+    networkResource := '';
+    driveName := mappedLetter + ':';
+    wnetResult := GetDriveType(PChar(driveName + '\'));
+    if (wnetResult <> DRIVE_REMOTE) and (wnetResult <> DRIVE_NO_ROOT_DIR) then
+      Result := true
+    else begin
+      bufferSize := MAX_PATH * SizeOf(char);
+      GetMem(remoteName, bufferSize + SizeOf(char));
+      try
+        wnetResult := WNetGetConnection(PChar(driveName), remoteName, bufferSize);
+        if wnetResult = ERROR_MORE_DATA then begin
+          FreeMem(remoteName);
+          GetMem(remoteName, bufferSize);
+          wnetResult := WNetGetConnection(PChar(driveName), remoteName, bufferSize);
+        end;
+        Result := (wnetResult = NO_ERROR) or (wnetResult = ERROR_CONNECTION_UNAVAIL);
+        if Result then begin
+          connectionIsAvailable := (wnetResult = NO_ERROR);
+          networkResource := Trim(StrPas(PChar(remoteName)));
+        end;
+      finally FreeMem(remoteName); end;
+    end;
+  end; { DSiGetNetworkResource }
+
+  {:Converts SUBSTed drive letter into true path.
+    Returns empty string if letter does not belog to a SUBSTed drive.
+    @author  gabr
+    @since   2009-10-20
+  }
+  function DSiGetSubstDrive(mappedLetter: char): string;
+  var
+    buffer    : PChar;
+    bufferSize: integer;
+    device    : string;
+  begin
+    Result := '';
+    device := mappedLetter + ':';
+    bufferSize := 256;
+    GetMem(buffer, bufferSize * SizeOf(char));
+    try
+      repeat
+        if QueryDosDevice(PChar(device), buffer, bufferSize-1) = 0 then begin
+          if GetLastError <> ERROR_INSUFFICIENT_BUFFER then
+            break //repeat
+          else begin
+            FreeMem(buffer);
+            bufferSize := 2 * bufferSize;
+            GetMem(buffer, bufferSize * SizeOf(char));
+          end;
+        end
+        else begin
+          device := string(buffer);
+          if Copy(device, 1, 4) = '\??\' then begin
+            Result := device;
+            Delete(Result, 1, 4);
+          end;
+          break; //repeat
+        end;
+      until false;
+    finally FreeMem(buffer); end;
+  end; { DSiGetSubstDrive }
+
+  {:Converts SUBSTed path into true path.
+    Returns original path if it does not lie on a SUBSTed drive.
+    @author  gabr
+    @since   2009-10-20
+  }
+  function DSiGetSubstPath(const path: string): string;
+  var
+    origPath: string;
+  begin
+    Result := path;
+    if Length(Result) < 2 then
+      Exit;
+    if path[2] = ':' then begin
+      origPath := DSiGetSubstDrive(path[1]);
+      if origPath <> '' then begin
+        Delete(Result, 1, 2);
+        Result := origPath + Result;
+      end;
+    end;
+  end; { DSiGetSubstPath }
+
   {:Returns temporary file name, either in the specified path or in the default temp path
     (if 'tempPath' is empty).
     @author  Miha-R
@@ -2325,6 +3272,7 @@ const
   function DSiGetTempFileName(const prefix, tempPath: string): string;
   var
     tempFileName: PChar;
+    usePrefix   : string;
     useTempPath : string;
   begin
     Result := '';
@@ -2332,9 +3280,13 @@ const
     try
       if tempPath = '' then
         useTempPath := DSiGetTempPath
-      else
+      else begin
         useTempPath := tempPath;
-      if GetTempFileName(PChar(useTempPath), PChar(prefix), 0, tempFileName) <> 0 then
+        UniqueString(useTempPath);
+      end;
+      usePrefix := prefix;
+      UniqueString(usePrefix);
+      if GetTempFileName(PChar(useTempPath), PChar(usePrefix), 0, tempFileName) <> 0 then
         Result := StrPas(tempFileName)
       else
         Result := '';
@@ -2347,11 +3299,11 @@ const
   }
   function DSiGetTempPath: string;
   var
+    bufSize : DWORD;
     tempPath: PChar;
-    bufSize: DWORD;
   begin
     bufSize := GetTempPath(0, nil);
-    GetMem(tempPath, bufSize*SizeOf(char));
+    GetMem(tempPath, bufSize * SizeOf(char));
     try
       GetTempPath(bufSize, tempPath);
       Result := StrPas(tempPath);
@@ -2520,6 +3472,67 @@ const
       RemoveDir(folder);
   end; { DSiRemoveFolder }
 
+  {:Try to revert WOW64 file system redirection status if running on 64-bit Windows.
+    Always succeeds on 32-bit windows.
+    @author  gabr
+    @since   2009-03-17
+  }
+  function DSiRevertWow64FsRedirection(const oldStatus: pointer): boolean;
+  begin
+    if DSiIsWow64 then
+      Result := DSiWow64RevertWow64FsRedirection(oldStatus)
+    else
+      Result := true;
+  end; { DSiRevertWow64FsRedirection }
+
+  {:Sets one of the file times - creation time, last access time, last write time.
+    @author  gabr
+    @since   2012-02-06
+  }
+  function DSiSetFileTime(const fileName: string; dateTime: TDateTime;
+    whatTime: TDSiFileTime): boolean;
+  var
+    creationTime        : TDateTime;
+    lastAccessTime      : TDateTime;
+    lastModificationTime: TDateTime;
+  begin
+    Result := DSiGetFileTimes(fileName, creationTime, lastAccessTime, lastModificationTime);
+    if not Result then
+      Exit;
+    case whatTime of
+      ftCreation:         creationTime := dateTime;
+      ftLastAccess:       lastAccessTime := dateTime;
+      ftLastModification: lastModificationTime := dateTime;
+      else raise Exception.CreateFmt('DSiSetFileTime: Unexpected whatTime: %d', [Ord(whatTime)]);
+    end;
+    Result := DSiSetFileTimes(fileName, creationTime, lastAccessTime, lastModificationTime);
+  end; { DSiSetFileTime }
+
+  {:Setsfile creation, last access and last write time.
+    @author  gabr
+    @since   2012-02-06
+  }
+  function  DSiSetFileTimes(const fileName: string; creationTime, lastAccessTime,
+    lastModificationTime: TDateTime): boolean;
+  var
+    fileHandle            : cardinal;
+    fsCreationTime        : TFileTime;
+    fsLastAccessTime      : TFileTime;
+    fsLastModificationTime: TFileTime;
+  begin
+    Result := false;
+    fileHandle := CreateFile(PChar(fileName), GENERIC_READ + GENERIC_WRITE, 0, nil,
+      OPEN_EXISTING, 0, 0);
+    if fileHandle <> INVALID_HANDLE_VALUE then try
+      Result :=
+        DSiDateTimeToFileTime(creationTime, fsCreationTime) and
+        DSiDateTimeToFileTime(lastAccessTime, fsLastAccessTime) and
+        DSiDateTimeToFileTime(lastModificationTime, fsLastModificationTime) and
+        SetFileTime(fileHandle, @fsCreationTime, @fsLastAccessTime,
+           @fsLastModificationTime);
+    finally CloseHandle(fileHandle); end;
+  end; { DSiSetFileTimes }
+
   {ales}
   function DSiShareFolder(const folder, shareName, comment: string): boolean;
   var
@@ -2592,6 +3605,233 @@ const
 
 { Processes }
 
+  const
+    DESKTOP_ALL = DESKTOP_READOBJECTS or DESKTOP_CREATEWINDOW or DESKTOP_CREATEMENU or DESKTOP_HOOKCONTROL or
+      DESKTOP_JOURNALRECORD or DESKTOP_JOURNALPLAYBACK or DESKTOP_ENUMERATE or DESKTOP_WRITEOBJECTS or
+      DESKTOP_SWITCHDESKTOP or STANDARD_RIGHTS_REQUIRED;
+
+    WINSTA_ALL = WINSTA_ENUMDESKTOPS or WINSTA_READATTRIBUTES or WINSTA_ACCESSCLIPBOARD or WINSTA_CREATEDESKTOP or
+      WINSTA_WRITEATTRIBUTES or WINSTA_ACCESSGLOBALATOMS or WINSTA_EXITWINDOWS or WINSTA_ENUMERATE or
+      WINSTA_READSCREEN or STANDARD_RIGHTS_REQUIRED;
+
+    GENERIC_ACCESS = GENERIC_READ or GENERIC_WRITE or GENERIC_EXECUTE or GENERIC_ALL;
+
+    HEAP_ZERO_MEMORY         = 8;
+    ACL_REVISION             = 2;
+    ACCESS_ALLOWED_ACE_TYPE  = 0;
+    CONTAINER_INHERIT_ACE    = 2;
+    INHERIT_ONLY_ACE         = 8;
+    OBJECT_INHERIT_ACE       = 1;
+    NO_PROPAGATE_INHERIT_ACE = 4;
+    SE_GROUP_LOGON_ID        = $C0000000;
+
+  type
+    ACL_SIZE_INFORMATION = record
+      AceCount: DWORD;
+      AclBytesInUse: DWORD;
+      AclBytesFree: DWORD;
+    end;
+
+    ACE_HEADER = record
+      AceType: BYTE;
+      AceFlags: BYTE;
+      AceSize: WORD;
+    end;
+    PACE_HEADER = ^ACE_HEADER;
+
+    ACCESS_ALLOWED_ACE = record
+      Header: ACE_HEADER;
+      Mask: ACCESS_MASK;
+      SidStart: DWORD;
+    end;
+    PACCESS_ALLOWED_ACE = ^ACCESS_ALLOWED_ACE;
+
+  function  DSiAddAceToDesktop(desktop: HDESK; sid: PSID): boolean;
+  var
+    aclSizeInfo : ACL_SIZE_INFORMATION;
+    dacl        : PACL;
+    daclExists  : LongBool;
+    daclPresent : LongBool;
+    iAce        : integer;
+    newAcl      : PACL;
+    newAclSize  : DWORD;
+    newSecDescr : PSECURITY_DESCRIPTOR;
+    sdSize      : DWORD;
+    sdSizeNeeded: DWORD;
+    secDescr    : PSECURITY_DESCRIPTOR;
+    secInfo     : SECURITY_INFORMATION;
+    skipAdd     : boolean;
+    tempAce     : PACE_HEADER;
+  begin
+    Result := false;
+    secDescr := nil;
+    newSecDescr := nil;
+    newAcl := nil;
+    secInfo := DACL_SECURITY_INFORMATION;
+    sdSize := 0;
+    try
+      if not GetUserObjectSecurity(desktop, secInfo, secDescr, sdSize, sdSizeNeeded) then begin
+        if GetLastError <> ERROR_INSUFFICIENT_BUFFER then
+          Exit;
+        secDescr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, sdSizeNeeded);
+        if secDescr = nil then
+          Exit;
+        newSecDescr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, sdSizeNeeded);
+        if newSecDescr = nil then
+          Exit;
+        sdSize := sdSizeNeeded;
+        if not GetUserObjectSecurity(desktop, secInfo, secDescr, sdSize, sdSizeNeeded) then
+          Exit;
+      end;
+      if not InitializeSecurityDescriptor(newSecDescr, SECURITY_DESCRIPTOR_REVISION) then
+        Exit;
+      if not GetSecurityDescriptorDacl(secDescr, daclPresent, dacl, daclExists) then
+        Exit;
+      ZeroMemory(@aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION));
+      aclSizeInfo.AclBytesInUse := SizeOf(ACL);
+      if assigned(dacl) then begin
+        if not GetAclInformation(dacl^, @aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION), AclSizeInformation) then
+          Exit;
+      end;
+      newAclSize := aclSizeInfo.AclBytesInUse + SizeOf(ACCESS_ALLOWED_ACE) +
+        GetLengthSid(sid) - SizeOf(DWORD);
+      newAcl := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, newAclSize);
+      if (newAcl = nil) or (not InitializeAcl(newAcl^, newAclSize, ACL_REVISION)) then
+        Exit;
+      skipAdd := false;
+      if daclPresent then begin
+        // Copy the ACEs to the new ACL.
+        for iAce := 0 to aclSizeInfo.AceCount - 1 do begin
+          if not (GetAce(dacl^, iAce, pointer(tempAce)) and
+                  AddAce(newAcl^, ACL_REVISION, MAXDWORD, tempAce, tempAce.AceSize))
+          then
+            Exit;
+          if (tempAce.AceType = ACCESS_ALLOWED_ACE_TYPE) and
+             EqualSID(@PACCESS_ALLOWED_ACE(tempAce)^.SidStart, sid)
+          then
+            skipAdd := true;
+        end;
+      end;
+      if not skipAdd then begin
+        if not (AddAccessAllowedAce(newAcl^, ACL_REVISION, DESKTOP_ALL, sid) and
+                SetSecurityDescriptorDacl(newSecDescr, true, newAcl, false) and
+                SetUserObjectSecurity(desktop, secInfo, newSecDescr))
+        then
+          Exit;
+      end;
+      Result := true;
+    finally
+      if assigned(newAcl) then
+        HeapFree(GetProcessHeap, 0, newAcl);
+      if assigned(secDescr) then
+        HeapFree(GetProcessHeap, 0, secDescr);
+      if assigned(newSecDescr) then
+        HeapFree(GetProcessHeap, 0, newSecDescr);
+    end;
+  end; { DSiAddAceToDesktop }
+
+  function DSiAddAceToWindowStation(station: HWINSTA; sid: PSID): boolean;
+  var
+    ace        : ^ACCESS_ALLOWED_ACE;
+    aclSizeInfo: ACL_SIZE_INFORMATION;
+    dacl       : PACL;
+    daclExists : LongBool;
+    daclPresent: LongBool;
+    iAce       : integer;
+    newAcl     : PACL;
+    newAclSize : DWORD;
+    newSecDecr : PSECURITY_DESCRIPTOR;
+    reqSdSize  : DWORD;
+    sdSize     : DWORD;
+    secDescr   : PSECURITY_DESCRIPTOR;
+    secInfo    : SECURITY_INFORMATION;
+    skipAdd    : boolean;
+    tempAce    : PACE_HEADER;
+  begin
+    Result := false;
+    secInfo := DACL_SECURITY_INFORMATION;
+    ace := nil;
+    secDescr := nil;
+    sdSize := 0;
+    newAcl := nil;
+    newSecDecr := nil;
+    try
+      if not GetUserObjectSecurity(station, secInfo, secDescr, sdSize, reqSdSize) then begin
+        if GetLastError <> ERROR_INSUFFICIENT_BUFFER then
+          Exit;
+        secDescr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, reqSdSize);
+        if secDescr = nil then
+          Exit;
+        newSecDecr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, reqSdSize);
+        if newSecDecr = nil then
+          Exit;
+        sdSize := reqSdSize;
+        if not GetUserObjectSecurity(station, secInfo, secDescr, sdSize, reqSdSize) then
+          Exit;
+      end;
+      if not InitializeSecurityDescriptor(newSecDecr, SECURITY_DESCRIPTOR_REVISION) then
+        Exit;
+      if not GetSecurityDescriptorDacl(secDescr, daclPresent, dacl, daclExists) then
+        Exit;
+      ZeroMemory(@aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION));
+      aclSizeInfo.AclBytesInUse := SizeOf(ACL);
+      if dacl <> nil then
+        if not GetAclInformation(dacl^, @aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION), AclSizeInformation) then
+          Exit;
+      newAclSize := aclSizeInfo.AclBytesInUse + (2 * SizeOf(ACCESS_ALLOWED_ACE)) +
+        (2 * GetLengthSid(sid)) - (2 * SizeOf(DWORD));
+      newAcl := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, newAclSize);
+      if newAcl = nil then
+        Exit;
+      if not InitializeAcl(newAcl^, newAclSize, ACL_REVISION) then
+        Exit;
+      skipAdd := false;
+      if daclPresent then begin
+        for iAce := 0 to aclSizeInfo.AceCount - 1 do begin
+          if not (GetAce(dacl^, iAce, pointer(tempAce)) and
+                  AddAce(newAcl^, ACL_REVISION, MAXDWORD, tempAce, tempAce.AceSize))
+          then
+            Exit;
+          if (tempAce.AceType = ACCESS_ALLOWED_ACE_TYPE) and
+             EqualSID(@PACCESS_ALLOWED_ACE(tempAce)^.SidStart, sid)
+          then
+            skipAdd := true;
+        end;
+      end;
+      if not skipAdd then begin
+        ace := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, SizeOf(ACCESS_ALLOWED_ACE) +
+          GetLengthSid(sid) - SizeOf(DWORD));
+        if ace = nil then
+          Exit;
+        ace.Header.AceType := ACCESS_ALLOWED_ACE_TYPE;
+        ace.Header.AceFlags := CONTAINER_INHERIT_ACE or INHERIT_ONLY_ACE or OBJECT_INHERIT_ACE;
+        ace.Header.AceSize := SizeOf(ACCESS_ALLOWED_ACE) + GetLengthSid(sid) - SizeOf(DWORD);
+        ace.Mask := GENERIC_ACCESS;
+        if not (CopySid(GetLengthSid(sid), @ace.SidStart, sid) and
+                AddAce(newAcl^, ACL_REVISION, MAXDWORD, ace, ace.Header.AceSize))
+        then
+          Exit;
+        ace.Header.AceFlags := NO_PROPAGATE_INHERIT_ACE;
+        ace.Mask := WINSTA_ALL;
+        if not (AddAce(newAcl^, ACL_REVISION, MAXDWORD, ace, ace.Header.AceSize) and
+                SetSecurityDescriptorDacl(newSecDecr, true, newAcl, false) and
+                SetUserObjectSecurity(station, secInfo, newSecDecr))
+        then
+          Exit;
+      end;
+      Result := true;
+    finally
+      if assigned(ace) then
+        HeapFree(GetProcessHeap, 0, ace);
+      if assigned(newAcl) then
+        HeapFree(GetProcessHeap, 0, newAcl);
+      if assigned(secDescr) then
+        HeapFree(GetProcessHeap, 0, secDescr);
+      if assigned(newSecDecr) then
+        HeapFree(GetProcessHeap, 0, newSecDecr);
+    end;
+  end; { DSiAddAceToWindowStation }
+
   {:Convert affinity mask into a string representation (0..9, A..V).
     @author  gabr
     @since   2003-11-14
@@ -2608,13 +3848,35 @@ const
     end;
   end; { DSiAffinityMaskToString }
 
+  {:Converts 'current process' pseudo-handle into a real handle belonging to the same
+    process. Don't forget to close the returned handle!
+    @author  gabr
+    @since   2009-03-16
+  }
+  function  DSiGetCurrentProcessHandle: THandle;
+  begin
+    DuplicateHandle(GetCurrentProcess, GetCurrentProcess, GetCurrentProcess, @Result, 0,
+      false, DUPLICATE_SAME_ACCESS);
+  end; { DSiGetCurrentProcessHandle } 
+
+  {:Converts 'current thread' pseudo-handle into a real handle belonging to the same
+    process. Don't forget to close the returned handle!
+    @author  gabr
+    @since   2009-03-16
+  }
+  function  DSiGetCurrentThreadHandle: THandle;
+  begin
+    DuplicateHandle(GetCurrentProcess, GetCurrentThread, GetCurrentProcess, @Result, 0,
+      false, DUPLICATE_SAME_ACCESS);
+  end; { DSiGetCurrentThreadHandle }
+
   {:Enables specified privilege for the current process.
     @author  Gre-Gor
     @since   2004-02-12
   }
   function DSiEnablePrivilege(const privilegeName: string): boolean;
   var
-    hToken   : DWORD;
+    hToken   : THandle;
     retLength: DWORD;
     tokenPriv: TTokenPrivileges;
   begin
@@ -2647,6 +3909,7 @@ const
   var
     processInfo: TProcessInformation;
     startupInfo: TStartupInfo;
+    tmpCmdLine : string;
     useWorkDir : string;
   begin
     if workDir = '' then
@@ -2657,7 +3920,9 @@ const
     startupInfo.cb := SizeOf(startupInfo);
     startupInfo.dwFlags := STARTF_USESHOWWINDOW;
     startupInfo.wShowWindow := visibility;
-    if not CreateProcess(nil, PChar(commandLine), nil, nil, false,
+    tmpCmdLine := commandLine;
+    {$IFDEF Unicode}UniqueString(tmpCmdLine);{$ENDIF Unicode}
+    if not CreateProcess(nil, PChar(tmpCmdLine), nil, nil, false,
              CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS, nil,
              PChar(useWorkDir), startupInfo, processInfo)
     then
@@ -2674,56 +3939,213 @@ const
     end;
   end; { DSiExecute }
 
+
+  {:Simplified DSiExecuteAsUser.
+    @author  gabr
+    @returns Returns MaxInt if any Win32 API fails or process exit code if wait is
+             specified or 0 in other cases.
+    @since   2010-06-18
+  }
+  function  DSiExecuteAsUser(const commandLine, username, password: string;
+    var winErrorCode: cardinal; const domain: string; visibility: integer;
+    const workDir: string; wait: boolean): cardinal;
+  var
+    processInfo: TProcessInformation;
+  begin
+    Result := DSiExecuteAsUser(commandLine, username, password, winErrorCode, processInfo,
+      domain, visibility, workDir, wait, nil);
+    if (Result <> cardinal(MaxInt)) and wait then begin
+      DSiCloseHandleAndNull(processInfo.hProcess);
+      DSiCloseHandleAndNull(processInfo.hThread);
+    end;
+  end; { DSiExecuteAsUser }
+
   {:Executes process as another user. Same as DSiExecute on 9x architecture.
     @author  gabr
     @returns Returns MaxInt if any Win32 API fails or process exit code if wait is
              specified or 0 in other cases.
     @since   2002-12-19
   }
-  function DSiExecuteAsUser(const commandLine, username, password, domain: string;
-    visibility: integer; const workDir: string; wait: boolean): cardinal;
+  function DSiExecuteAsUser(const commandLine, username, password: string;
+    var winErrorCode: cardinal; var processInfo: TProcessInformation;
+    const domain: string; visibility: integer; const workDir: string; wait: boolean;
+    startInfo: PStartupInfo): cardinal;
   var
-    lastError  : DWORD;
-    logonHandle: THandle;
-    processInfo: TProcessInformation;
-    startupInfo: TStartupInfo;
-    useWorkDir : string;
+    dwSize            : DWORD;
+    hProcess          : THandle;
+    interDesktop      : HDESK;
+    interWindowStation: HWINSTA;
+    lastError         : DWORD;
+    logonHandle       : THandle;
+    logonSID          : PSID;
+    lpvEnv            : pointer;
+    origWindowStation : HWINSTA;
+    startupInfo       : TStartupInfo;
+    startupInfoW      : TStartupInfoW;
+    szUserProfile     : PWideChar;
+    tmpCmdLine        : string;
+    useStartInfo      : pointer;
+    workDirW          : WideString;
   begin
-    if not DSiIsWinNT then
-      Result := DSiExecute(commandLine, visibility, workDir, wait)
-    else begin
-      Result := MaxInt;
-      if DSiLogonUser(PChar(username), PChar(domain), PChar(password),
-           LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, logonHandle) then
-      begin
-        if workDir = '' then
-          GetDir(0, useWorkDir)
-        else
-          useWorkDir := workDir;
-        FillChar(startupInfo, SizeOf(startupInfo), #0);
-        startupInfo.cb := SizeOf(startupInfo);
-        startupInfo.dwFlags := STARTF_USESHOWWINDOW;
-        startupInfo.wShowWindow := visibility;
-        if not DSiCreateProcessAsUser(logonHandle, nil, PChar(commandLine), nil,
-             nil, false, CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS, nil,
-             PChar(useWorkDir), startupInfo, processInfo)
-        then
-          Result := MaxInt
-        else begin
-          if wait then begin
-            WaitForSingleObject(processInfo.hProcess, INFINITE);
-            GetExitCodeProcess(processInfo.hProcess, Result);
+    Result := MaxInt;
+    logonHandle := 0;
+    lpvEnv := nil;
+    szUserProfile := nil;
+    origWindowStation := 0;
+    logonSID := nil;
+    interWindowStation := 0;
+    interDesktop := 0;
+    logonHandle := 0;
+    hProcess := 0;
+    try
+      if not DSiIsWinNT then
+        Result := DSiExecute(commandLine, visibility, workDir, wait)
+      else begin
+        try
+          if username <> '' then begin
+            if not DSiLogonAs(username, password, domain, logonHandle) then
+              Exit;
           end
-          else
-            Result := 0;
-          CloseHandle(processInfo.hProcess);
-          CloseHandle(processInfo.hThread);
+          else begin
+            hProcess := OpenProcess(STANDARD_RIGHTS_REQUIRED or SYNCHRONIZE or $FFF, true, GetCurrentProcessID);
+            if hProcess = 0 then
+              Exit;
+            if not OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES or TOKEN_QUERY, logonHandle) then
+              Exit;
+          end;
+            
+          if workDir <> '' then
+            workDirW := workDir
+          else begin
+            GetMem(szUserProfile, SizeOf(WideChar) * 257);
+            dwSize := 256;
+            if not DSiGetUserProfileDirectoryW(logonHandle, szUserProfile, dwSize) then
+              Exit;
+            if workDir = '' then
+              workDirW := szUserProfile;
+          end;
+          
+          origWindowStation := GetProcessWindowStation;
+          if origWindowStation = 0 then
+            Exit;
+          interWindowStation := OpenWindowStation('winsta0', false, READ_CONTROL OR WRITE_DAC);
+          if interWindowStation = 0 then
+            Exit;
+          if not SetProcessWindowStation(interWindowStation) then
+            Exit;
+          interDesktop := OpenDesktop('default', 0, false, READ_CONTROL OR WRITE_DAC OR
+            DESKTOP_WRITEOBJECTS OR DESKTOP_READOBJECTS);
+          if (not SetProcessWindowStation(origWindowStation)) or
+             (interDesktop = 0) or
+             (not DSiGetLogonSID(logonHandle, logonSID))
+          then
+            Exit;
+          if (not assigned(logonSID)) or
+             (not DSiAddAceToWindowStation(interWindowStation, logonSID)) or
+             (not DSiAddAceToDesktop(interDesktop, logonSID)) then 
+            Exit;
+
+          FillChar(startupInfo, SizeOf(startupInfo), #0);
+          startupInfo.cb := SizeOf(startupInfo);
+          startupInfo.dwFlags := STARTF_USESHOWWINDOW;
+          startupInfo.lpDesktop := PChar('winsta0\default');
+          startupInfo.wShowWindow := visibility;
+          if username = '' then begin
+            useStartInfo := startInfo;
+            if not assigned(useStartInfo) then
+              useStartInfo := @startupInfo;
+            tmpCmdLine := commandLine;
+            {$IFDEF Unicode}UniqueString(tmpCmdLine);{$ENDIF Unicode}
+            if CreateProcess(nil, PChar(tmpCmdLine), nil, nil, false,
+                 CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS, nil,
+                 PChar(string(workDirW)), PStartupInfo(useStartInfo)^, processInfo)
+            then
+              Result := 0;
+          end
+          else begin
+            // Impersonate client to ensure access to executable file.
+            if (not ImpersonateLoggedOnUser(logonHandle)) then
+              Exit;
+            try
+              useStartInfo := startInfo;
+              if not assigned(useStartInfo) then
+                useStartInfo := @startupInfo;
+              tmpCmdLine := commandLine;
+              {$IFDEF Unicode}UniqueString(tmpCmdLine);{$ENDIF Unicode}
+              if DSiCreateProcessAsUser(logonHandle, nil, PChar(tmpCmdLine), nil,
+                   nil, false, {CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS} CREATE_DEFAULT_ERROR_MODE, nil,
+                   PChar(string(workDirW)), PStartupInfo(useStartInfo)^, processInfo)
+              then
+                Result := 0;
+              lastError := GetLastError;
+            finally
+              if (username <> '') then
+                RevertToSelf;
+            end;
+            SetLastError(lastError);
+          end;
+
+          if (Result <> 0) and (GetLastError = ERROR_PRIVILEGE_NOT_HELD) and (username <> '') then begin
+            if not DSiCreateEnvironmentBlock(lpvEnv, logonHandle, true) then
+              Exit;
+            Assert(SizeOf(TStartupInfoA) = SizeOf(TStartupInfoW));
+            Move(useStartInfo^, startupInfoW, SizeOf(TStartupInfoW));
+            startupInfoW.lpDesktop := nil;
+            tmpCmdLine := commandLine;
+            {$IFDEF Unicode}UniqueString(tmpCmdLine);{$ENDIF Unicode}
+            if DSiCreateProcessWithLogonW(PWideChar(WideString(username)),
+              PWideChar(WideString(domain)), PWideChar(WideString(password)),
+              1 {LOGON_WITH_PROFILE}, nil, PWideChar(WideString(tmpCmdLine)),
+              CREATE_UNICODE_ENVIRONMENT, lpvEnv, PWideChar(WideString(workDirW)),
+              startupInfoW, processInfo)
+            then
+              Result := 0;
+          end;
+
+          if Result = 0 then begin
+            lastError := GetLastError;
+            if wait then begin
+              WaitForSingleObject(processInfo.hProcess, INFINITE);
+              GetExitCodeProcess(processInfo.hProcess, Result);
+              DSiCloseHandleAndNull(processInfo.hProcess);
+              DSiCloseHandleAndNull(processInfo.hThread);
+            end
+            else begin
+              Result := 0;
+              if username <> '' then begin
+                CreateProcessWatchdog(TCleanupAces.Create(processInfo.hProcess, interWindowStation, interDesktop, logonSID));
+                interWindowStation := 0;
+                interDesktop := 0;
+                logonSID := nil;
+              end;
+            end;
+            SetLastError(lastError);
+          end;
+
+        finally
+          lastError := GetLastError;
+          if assigned(lpvEnv) then
+            DSiDestroyEnvironmentBlock(lpvEnv);
+          DSiCloseHandleAndNull(logonHandle);
+          DSiCloseHandleAndNull(hProcess);
+          DSiFreeMemAndNil(pointer(szUserProfile));
+          if origWindowStation <> 0 then
+            SetProcessWindowStation(origWindowStation);
+          if assigned(logonSID) and (username <> '') then begin
+            if interWindowStation <> 0 then
+              DSiRemoveAceFromWindowStation(interWindowStation, logonSID);
+            if interDesktop <> 0 then
+              DSiRemoveAceFromDesktop(interDesktop, logonSID);
+            HeapFree(GetProcessHeap, 0, logonSID);
+          end;
+          if interWindowStation <> 0 then
+            CloseWindowStation(interWindowStation);
+          if interDesktop <> 0 then
+            CloseDesktop(interDesktop);
+          SetLastError(lastError);
         end;
-        lastError := GetLastError;
-        CloseHandle(logonHandle);
-        SetLastError(lastError);
       end;
-    end;
+    finally winErrorCode := GetLastError; end;
   end; { DSiExecuteAsUser }
 
   {:Executes console process in a hidden window and captures its output in a TStrings
@@ -2731,78 +4153,136 @@ const
     Totaly reworked on 2006-01-23. New code contributed by matej.
     Handles only up to 1 MB of console process output.
     @returns ID of the console process or 0 if process couldn't be started.
-    @author  aoven, Lee_Nover, gabr, matej
+    @author  aoven, Lee_Nover, gabr, matej, mitja
     @since   2003-05-24
   }
-  function DSiExecuteAndCapture(const app: string; output: TStrings;
-    const workDir: string; var exitCode: longword): cardinal;
-  const
-    ReadBuffer = 1048576;  // 1 MB Buffer
+  function DSiExecuteAndCapture(const app: string; output: TStrings; const workDir: string;
+    var exitCode: longword; waitTimeout_sec: integer; onNewLine: TDSiOnNewLineCallback): cardinal;
   var
-    Security            : TSecurityAttributes;
-    ReadPipe            : THandle;
-    WritePipe           : THandle;
-    start               : TStartUpInfo;
-    ProcessInfo         : TProcessInformation;
-    Buffer              : PAnsiChar;
-    TotalBytesRead      : DWORD;
-    BytesRead           : DWORD;
-    AppRunning          : integer;
-    n                   : integer;
-    BytesLeftThisMessage: integer;
-    TotalBytesAvail     : integer;
-    useWorkDir          : string;
-  begin
+    endTime_ms         : int64;
+    lineBuffer         : PAnsiChar;
+    lineBufferSize     : integer;
+    partialLine        : string;
+    runningTimeLeft_sec: integer;
+
+    procedure ProcessPartialLine(buffer: PAnsiChar; numBytes: integer);
+    var
+      now_ms: int64;
+      p     : integer;
+    begin
+      if lineBufferSize < (numBytes + 1) then begin
+        lineBufferSize := numBytes + 1;
+        ReallocMem(lineBuffer, lineBufferSize);
+      end;
+      // called made sure that buffer is zero terminated
+      OemToCharA(buffer, lineBuffer);
+      {$IFDEF Unicode}
+      partialLine := partialLine + UnicodeString(StrPas(lineBuffer));
+      {$ELSE}
+      partialLine := partialLine + StrPas(lineBuffer);
+      {$ENDIF Unicode}
+      repeat
+        p := Pos(#13#10, partialLine);
+        if p <= 0 then
+          break; //repeat
+        now_ms := DSiTimeGetTime64;
+        runningTimeLeft_sec := (endTime_ms - now_ms) div 1000;
+        onNewLine(Copy(partialLine, 1, p-1), runningTimeLeft_sec);
+        endTime_ms := now_ms + runningTimeLeft_sec * 1000;
+        Delete(partialLine, 1, p+1);
+      until false;
+    end; { ProcessPartialLine }
+
+  const
+    SizeReadBuffer = 1048576;  // 1 MB Buffer
+
+  var
+    appRunning      : integer;
+    appW            : string;
+    buffer          : PAnsiChar;
+    bytesLeftThisMsg: integer;
+    bytesRead       : DWORD;
+    err             : cardinal;
+    processInfo     : TProcessInformation;
+    readPipe        : THandle;
+    security        : TSecurityAttributes;
+    start           : TStartUpInfo;
+    totalBytesAvail : integer;
+    totalBytesRead  : DWORD;
+    useWorkDir      : string;
+    writePipe       : THandle;
+
+  begin { DSiExecuteAndCapture }
     Result := 0;
-    Security.nLength := SizeOf(TSecurityAttributes);
-    Security.bInheritHandle := true;
-    Security.lpSecurityDescriptor := nil;
-    if CreatePipe (ReadPipe, WritePipe, @Security, 0) then begin
-      Buffer := AllocMem(ReadBuffer + 1);
+    err := 0;
+    partialLine := '';
+    lineBufferSize := 0;
+    lineBuffer := nil;
+    endTime_ms := DSiTimeGetTime64 + waitTimeout_sec * 1000;
+    security.nLength := SizeOf(TSecurityAttributes);
+    security.bInheritHandle := true;
+    security.lpSecurityDescriptor := nil;
+    if CreatePipe (readPipe, writePipe, @security, 0) then begin
+      buffer := AllocMem(SizeReadBuffer + 1);
       FillChar(Start,Sizeof(Start),#0);
       start.cb := SizeOf(start);
-      start.hStdOutput := WritePipe;
-      start.hStdInput := ReadPipe;
+      start.hStdOutput := writePipe;
+      start.hStdInput := readPipe;
+      start.hStdError := writePipe;
       start.dwFlags := STARTF_USESTDHANDLES + STARTF_USESHOWWINDOW;
       start.wShowWindow := SW_HIDE;
       if workDir = '' then
         GetDir(0, useWorkDir)
       else
         useWorkDir := workDir;
-      if CreateProcess(nil, PChar(app), @Security, @Security, true,
-           CREATE_NO_WINDOW or NORMAL_PRIORITY_CLASS, nil,PChar(useWorkDir), start,
-           ProcessInfo) then
+      appW := app;
+      {$IFDEF Unicode}UniqueString(appW);{$ENDIF Unicode}
+      if CreateProcess(nil, PChar(appW), @security, @security, true,
+           CREATE_NO_WINDOW or NORMAL_PRIORITY_CLASS, nil, PChar(useWorkDir), start,
+           processInfo) then
       begin
-        Result := ProcessInfo.hProcess;
-        n := 0;
-        TotalBytesRead := 0;
+        SetLastError(0); // [Mitja] found a situation where CreateProcess succeeded but the last error was 126
+        Result := processInfo.hProcess;
+        totalBytesRead := 0;
         repeat
-          // Increase counter to prevent an endless loop if the process is dead
-          Inc(n,1);
-          AppRunning := WaitForSingleObject(ProcessInfo.hProcess,100);
-          if not PeekNamedPipe(ReadPipe, @Buffer[TotalBytesRead], ReadBuffer, @BytesRead,
-                   @TotalBytesAvail, @BytesLeftThisMessage)
+          appRunning := WaitForSingleObject(processInfo.hProcess, 100);
+          if not PeekNamedPipe(readPipe, @buffer[totalBytesRead],
+                   SizeReadBuffer - totalBytesRead, @bytesRead, @totalBytesAvail,
+                   @bytesLeftThisMsg)
           then
             break //repeat
-          else if BytesRead > 0 then
-            ReadFile(ReadPipe,Buffer[TotalBytesRead],BytesRead,BytesRead,nil);
-          TotalBytesRead := TotalBytesRead + BytesRead;
-        until (AppRunning <> WAIT_TIMEOUT) or (n > 150);
-        Buffer[TotalBytesRead] := #0;
-        OemToCharA(Buffer, Buffer);
+          else if bytesRead > 0 then
+            ReadFile(readPipe, buffer[totalBytesRead], bytesRead, bytesRead, nil);
+          buffer[totalBytesRead + bytesRead] := #0; // required for ProcessPartialLine
+          if assigned(onNewLine) then
+            ProcessPartialLine(@buffer[totalBytesRead], bytesRead);
+          totalBytesRead := totalBytesRead + bytesRead;
+          if totalBytesRead = SizeReadBuffer then
+            raise Exception.Create('DSiExecuteAndCapture: Buffer full!');
+        until (appRunning <> WAIT_TIMEOUT) or (DSiTimeGetTime64 > endTime_ms);
+        if partialLine <> '' then begin
+          runningTimeLeft_sec := 0;
+          onNewLine(partialLine, runningTimeLeft_sec);
+        end;
+        OemToCharA(buffer, buffer);
         {$IFDEF Unicode}
         output.Text := UnicodeString(StrPas(Buffer));
         {$ELSE}
-        output.Text := StrPas(Buffer);
+        output.Text := StrPas(buffer);
         {$ENDIF Unicode}
-      end;
-      FreeMem(Buffer);
-      GetExitCodeProcess(ProcessInfo.hProcess, exitCode);
-      CloseHandle(ProcessInfo.hProcess);
-      CloseHandle(ProcessInfo.hThread); 
-      CloseHandle(ReadPipe); 
-      CloseHandle(WritePipe); 
-    end; 
+      end
+      else
+        err := GetLastError;
+      FreeMem(buffer);
+      GetExitCodeProcess(processInfo.hProcess, exitCode);
+      CloseHandle(processInfo.hProcess);
+      CloseHandle(processInfo.hThread);
+      CloseHandle(readPipe);
+      CloseHandle(writePipe);
+      DSiFreeMemAndNil(pointer(lineBuffer));
+    end;
+    if err <> 0 then
+      SetLastError(err);
   end; { DSiExecuteAndCapture }
 
   {:Retrieves affinity mask of the current process as a list of CPU IDs (0..9, A..V).
@@ -2820,12 +4300,15 @@ const
   }        
   function DSiGetProcessAffinityMask: DWORD;
   var
-    systemAffinityMask: DWORD;
+    processAffinityMask: DSiNativeUInt;
+    systemAffinityMask : DSiNativeUInt;
   begin
     if not DSiIsWinNT then
       Result := 1
-    else 
-      GetProcessAffinityMask(GetCurrentProcess, Result, systemAffinityMask);
+    else begin
+      GetProcessAffinityMask(GetCurrentProcess, processAffinityMask, systemAffinityMask);
+      Result := processAffinityMask;
+    end;
   end; { DSiGetProcessAffinityMask }
 
   {:Returns memory counters for the current process.
@@ -3038,12 +4521,15 @@ const
   }
   function DSiGetSystemAffinityMask: DWORD;
   var
-    processAffinityMask: DWORD;
+    processAffinityMask: DSiNativeUInt;
+    systemAffinityMask : DSiNativeUInt;
   begin
     if not DSiIsWinNT then
       Result := 1
-    else 
-      GetProcessAffinityMask(GetCurrentProcess, processAffinityMask, Result);
+    else begin
+      GetProcessAffinityMask(GetCurrentProcess, processAffinityMask, systemAffinityMask);
+      Result := systemAffinityMask;
+    end;
   end; { TDSiRegistry.DSiGetSystemAffinityMask }
   
   {:Retrieves affinity mask of the current thread as a list of CPU IDs (0..9,
@@ -3065,8 +4551,8 @@ const
   }
   function DSiGetThreadAffinityMask: DWORD;
   var
-    processAffinityMask: DWORD;
-    systemAffinityMask : DWORD;
+    processAffinityMask: DSiNativeUInt;
+    systemAffinityMask : DSiNativeUInt;
   begin
     if not DSiIsWinNT then
       Result := 1
@@ -3076,6 +4562,33 @@ const
       SetThreadAffinityMask(GetCurrentThread, Result);
     end;
   end; { DSiGetThreadAffinityMask }
+
+  {:Returns [kernel time] + [user time] for the current thread.
+    @author  gabr
+    @since   2011-09-26
+  }
+  function DSiGetThreadTime: int64;
+  var
+    creationTime: TDateTime;
+    kernelTime  : int64;
+    userTime    : int64;
+  begin
+    Result := 0;
+    if DSiGetThreadTimes(creationTime, userTime, kernelTime) then
+      Result := userTime + kernelTime;
+  end; { DSiGetThreadTime }
+
+  function DSiGetThreadTime(thread: THandle): int64;
+  var
+    creationTime: TDateTime;
+    exitTime    : TDateTime;
+    kernelTime  : int64;
+    userTime    : int64;
+  begin
+    Result := 0;
+    if DSiGetThreadTimes(thread, creationTime, exitTime, userTime, kernelTime) then
+      Result := userTime + kernelTime;
+  end; { DSiGetThreadTime }
 
   {:Returns various times of the current thread.
     @author  gabr
@@ -3116,28 +4629,14 @@ const
   // Returns True if user can be impersonated. Always True on 9x architecture.
   function DSiImpersonateUser(const username, password, domain: string): boolean;
   var
-    dsiDomain  : string;
-    dsiUsername: string;
     lastError  : DWORD;
     logonHandle: THandle;
-    posDomain  : integer;
   begin
     if not DSiIsWinNT then
       Result := true
     else begin
       Result := false;
-      dsiDomain := domain;
-      dsiUsername := username;
-      if dsiDomain = '.' then begin
-        posDomain := Pos('\', dsiUsername);
-        if posDomain > 0 then begin
-          dsiDomain := Copy(dsiUsername, 1, posDomain-1);
-          Delete(dsiUsername, 1, posDomain);
-        end;
-      end;
-      if DSiLogonUser(PChar(dsiUsername), PChar(dsiDomain), PChar(password),
-           LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, logonHandle) then
-      begin
+      if DSiLogonAs(username, password, domain, logonHandle) then begin
         Result := DSiImpersonateLoggedOnUser(logonHandle);
         lastError := GetLastError;
         CloseHandle(logonHandle);
@@ -3155,8 +4654,8 @@ const
   function DSiIncrementWorkingSet(incMinSize, incMaxSize: integer): boolean;
   var
     hProcess         : THandle;
-    maxWorkingSetSize: DWORD;
-    minWorkingSetSize: DWORD;
+    maxWorkingSetSize: DSiNativeUInt;
+    minWorkingSetSize: DSiNativeUInt;
   begin
     Result := false;
     hProcess := OpenProcess(PROCESS_QUERY_INFORMATION OR PROCESS_SET_QUOTA, false,
@@ -3190,6 +4689,45 @@ const
     end;
   end; { DSiIsDebugged }
 
+  function DSiLogonAs(const username, password: string;
+    var logonHandle: THandle): boolean; overload;
+  begin
+    Result := DSiLogonAs(username, password, '.', logonHandle);
+  end; { DSiLogonAs }
+  
+  {:A simple wrapper arount the LogonUser API that handles 'domain\user' input in the
+    'username' field.
+    @author  gabr
+    @since   2010-04-08
+  }
+  function DSiLogonAs(const username, password, domain: string;
+    var logonHandle: THandle): boolean; overload;
+  var
+    dsiDomain  : string;
+    dsiUsername: string;
+    posDomain  : integer;
+  begin
+    if not DSiIsWinNT then begin
+      logonHandle := 0;
+      Result := true;
+    end
+    else begin
+      dsiDomain := domain;
+      dsiUsername := username;
+      if dsiDomain = '.' then begin
+        posDomain := Pos('\', dsiUsername);
+        if posDomain > 0 then begin
+          dsiDomain := Copy(dsiUsername, 1, posDomain-1);
+          Delete(dsiUsername, 1, posDomain);
+        end;
+      end;
+      Result := DSiLogonUser(PChar(dsiUsername), PChar(dsiDomain), PChar(password),
+        LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, logonHandle);
+      if not Result then
+        logonHandle := 0;
+    end;
+  end; { DSiLogonAs }
+
   {ln}
   function DSiOpenURL(const URL: string; newBrowser: boolean): boolean;
   begin
@@ -3222,6 +4760,181 @@ const
     GetModuleFileName(HInstance, FileName, SizeOf(FileName));
     Result := string(FileName);
   end; { DSiRealModuleName }
+
+  function DSiRemoveAceFromDesktop(desktop: HDESK; sid: PSID): boolean;
+  var
+    aclSizeInfo : ACL_SIZE_INFORMATION;
+    dacl        : PACL;
+    daclExists  : LongBool;
+    daclPresent : LongBool;
+    iAce        : integer;
+    newAcl      : PACL;
+    newAclSize  : DWORD;
+    newSecDescr : PSECURITY_DESCRIPTOR;
+    sdSize      : DWORD;
+    sdSizeNeeded: DWORD;
+    secDescr    : PSECURITY_DESCRIPTOR;
+    secInfo     : SECURITY_INFORMATION;
+    tempAce     : PACE_HEADER;
+  begin
+    Result := false;
+    secDescr := nil;
+    newSecDescr := nil;
+    newAcl := nil;
+    secInfo := DACL_SECURITY_INFORMATION;
+    sdSize := 0;
+    try
+      if not GetUserObjectSecurity(desktop, secInfo, secDescr, sdSize, sdSizeNeeded) then begin
+        if GetLastError <> ERROR_INSUFFICIENT_BUFFER then
+          Exit;
+        secDescr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, sdSizeNeeded);
+        if secDescr = nil then
+          Exit;
+        newSecDescr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, sdSizeNeeded);
+        if newSecDescr = nil then
+          Exit;
+        sdSize := sdSizeNeeded;
+        if not GetUserObjectSecurity(desktop, secInfo, secDescr, sdSize, sdSizeNeeded) then
+          Exit;
+      end;
+      if not InitializeSecurityDescriptor(newSecDescr, SECURITY_DESCRIPTOR_REVISION) then
+        Exit;
+      if not GetSecurityDescriptorDacl(secDescr, daclPresent, dacl, daclExists) then
+        Exit;
+      ZeroMemory(@aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION));
+      aclSizeInfo.AclBytesInUse := SizeOf(ACL);
+      if assigned(dacl) then begin
+        if not GetAclInformation(dacl^, @aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION), AclSizeInformation) then
+          Exit;
+      end;
+      newAclSize := aclSizeInfo.AclBytesInUse + SizeOf(ACCESS_ALLOWED_ACE) +
+        GetLengthSid(sid) - SizeOf(DWORD);
+      newAcl := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, newAclSize);
+      if (newAcl = nil) or (not InitializeAcl(newAcl^, newAclSize, ACL_REVISION)) then
+        Exit;
+      if daclPresent then begin
+        // Copy the ACEs to the new ACL.
+        for iAce := 0 to aclSizeInfo.AceCount - 1 do begin
+          if not GetAce(dacl^, iAce, pointer(tempAce)) then
+            Exit;
+          if (tempAce.AceType <> ACCESS_ALLOWED_ACE_TYPE) or
+             (not EqualSID(@PACCESS_ALLOWED_ACE(tempAce)^.SidStart, sid))
+          then
+            if not AddAce(newAcl^, ACL_REVISION, MAXDWORD, tempAce, tempAce.AceSize) then
+              Exit;
+        end;
+      end;
+      if not (SetSecurityDescriptorDacl(newSecDescr, true, newAcl, false) and
+              SetUserObjectSecurity(desktop, secInfo, newSecDescr))
+      then
+        Exit;
+      Result := true;
+    finally
+      if assigned(newAcl) then
+        HeapFree(GetProcessHeap, 0, newAcl);
+      if assigned(secDescr) then
+        HeapFree(GetProcessHeap, 0, secDescr);
+      if assigned(newSecDescr) then
+        HeapFree(GetProcessHeap, 0, newSecDescr);
+    end;
+  end; { DSiRemoveAceFromDesktop }
+
+  function DSiRemoveAceFromWindowStation(station: HWINSTA; sid: PSID): boolean;
+  var
+    ace        : ^ACCESS_ALLOWED_ACE;
+    aclSizeInfo: ACL_SIZE_INFORMATION;
+    dacl       : PACL;
+    daclExists : LongBool;
+    daclPresent: LongBool;
+    iAce       : integer;
+    newAcl     : PACL;
+    newAclSize : DWORD;
+    newSecDecr : PSECURITY_DESCRIPTOR;
+    reqSdSize  : DWORD;
+    sdSize     : DWORD;
+    secDescr   : PSECURITY_DESCRIPTOR;
+    secInfo    : SECURITY_INFORMATION;
+    tempAce    : PACE_HEADER;
+  begin
+    Result := false;
+    secInfo := DACL_SECURITY_INFORMATION;
+    ace := nil;
+    secDescr := nil;
+    sdSize := 0;
+    newAcl := nil;
+    newSecDecr := nil;
+    try
+      if not GetUserObjectSecurity(station, secInfo, secDescr, sdSize, reqSdSize) then begin
+        if GetLastError <> ERROR_INSUFFICIENT_BUFFER then
+          Exit;
+        secDescr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, reqSdSize);
+        if secDescr = nil then
+          Exit;
+        newSecDecr := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, reqSdSize);
+        if newSecDecr = nil then
+          Exit;
+        sdSize := reqSdSize;
+        if not GetUserObjectSecurity(station, secInfo, secDescr, sdSize, reqSdSize) then
+          Exit;
+      end;
+      if not InitializeSecurityDescriptor(newSecDecr, SECURITY_DESCRIPTOR_REVISION) then
+        Exit;
+      if not GetSecurityDescriptorDacl(secDescr, daclPresent, dacl, daclExists) then
+        Exit;
+      ZeroMemory(@aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION));
+      aclSizeInfo.AclBytesInUse := SizeOf(ACL);
+      if dacl <> nil then
+        if not GetAclInformation(dacl^, @aclSizeInfo, SizeOf(ACL_SIZE_INFORMATION), AclSizeInformation) then
+          Exit;
+      newAclSize := aclSizeInfo.AclBytesInUse + (2 * SizeOf(ACCESS_ALLOWED_ACE)) +
+        (2 * GetLengthSid(sid)) - (2 * SizeOf(DWORD));
+      newAcl := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, newAclSize);
+      if newAcl = nil then
+        Exit;
+      if not InitializeAcl(newAcl^, newAclSize, ACL_REVISION) then
+        Exit;
+      if daclPresent then begin
+        for iAce := 0 to aclSizeInfo.AceCount - 1 do begin
+          if not GetAce(dacl^, iAce, pointer(tempAce)) then
+            Exit;
+          if (tempAce.AceType <> ACCESS_ALLOWED_ACE_TYPE) or
+             (not EqualSID(@PACCESS_ALLOWED_ACE(tempAce)^.SidStart, sid))
+          then 
+            if not AddAce(newAcl^, ACL_REVISION, MAXDWORD, tempAce, tempAce.AceSize) then
+              Exit;
+        end;
+      end;
+      ace := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, SizeOf(ACCESS_ALLOWED_ACE) +
+        GetLengthSid(sid) - SizeOf(DWORD));
+      if ace = nil then
+        Exit;
+      ace.Header.AceType := ACCESS_ALLOWED_ACE_TYPE;
+      ace.Header.AceFlags := CONTAINER_INHERIT_ACE or INHERIT_ONLY_ACE or OBJECT_INHERIT_ACE;
+      ace.Header.AceSize := SizeOf(ACCESS_ALLOWED_ACE) + GetLengthSid(sid) - SizeOf(DWORD);
+      ace.Mask := GENERIC_ACCESS;
+      if not (CopySid(GetLengthSid(sid), @ace.SidStart, sid) and
+              AddAce(newAcl^, ACL_REVISION, MAXDWORD, ace, ace.Header.AceSize))
+      then
+        Exit;
+      ace.Header.AceFlags := NO_PROPAGATE_INHERIT_ACE;
+      ace.Mask := WINSTA_ALL;
+      if not (AddAce(newAcl^, ACL_REVISION, MAXDWORD, ace, ace.Header.AceSize) and
+              SetSecurityDescriptorDacl(newSecDecr, true, newAcl, false) and
+              SetUserObjectSecurity(station, secInfo, newSecDecr))
+      then
+        Exit;
+      Result := true;
+    finally
+      if assigned(ace) then
+        HeapFree(GetProcessHeap, 0, ace);
+      if assigned(newAcl) then
+        HeapFree(GetProcessHeap, 0, newAcl);
+      if assigned(secDescr) then
+        HeapFree(GetProcessHeap, 0, secDescr);
+      if assigned(newSecDecr) then
+        HeapFree(GetProcessHeap, 0, newSecDecr);
+    end;
+  end; { DSiRemoveAceFromWindowStation }
 
   {:Sets current process' affinity mask.
     @param   affinity List of CPUs to include in the affinity mask (0..9, A..V).
@@ -3317,7 +5030,7 @@ const
   var
     idWindow: DWORD;
   begin
-    GetWindowThreadProcessId(hWindow, idWindow);
+    GetWindowThreadProcessId(hWindow, @idWindow);
     if idWindow = DWORD(lParam) then
       PostMessage(hWindow, WM_CLOSE, 0, 0);
     Result := true;
@@ -3434,6 +5147,17 @@ const
     end;
   end; { DSiFreeMemAndNil }
 
+  {:Wrapper for the GlobalMemoryStatusEx API. Required Windows 2000.
+    @author: gp
+    @since   2009-01-23
+  }
+  function DSiGetGlobalMemoryStatus(var memoryStatus: TMemoryStatusEx): boolean;
+  begin
+    FillChar(memoryStatus, SizeOf(memoryStatus), 0);
+    memoryStatus.dwLength := SizeOf(memoryStatus);
+    Result := DSiGlobalMemoryStatusEx(@memoryStatus);
+  end; { DSiGlobalMemoryStatusEx }
+
 { Windows }
 
 const //DSiAllocateHwnd window extra data offsets
@@ -3448,27 +5172,34 @@ var
   GDSiWndHandlerCritSect: TRTLCriticalSection;
   //Count of registered windows in this instance
   GDSiWndHandlerCount: integer;
+  GTerminateBackgroundTasks: THandle;
 
   {:Class message dispatcher for the DSiUtilWindow class. Fetches instance's WndProc from
     the window extra data and calls it.
   }
-  function DSiClassWndProc(Window: HWND; Message, WParam, LParam: longint): longint; stdcall;
+  function DSiClassWndProc(Window: HWND; Message: cardinal; aWParam, aLParam: longint): longint; stdcall;
   var
     instanceWndProc: TMethod;
     msg            : TMessage;
   begin
-    instanceWndProc.Code := Pointer(GetWindowLong(Window, GWL_METHODCODE));
-    instanceWndProc.Data := Pointer(GetWindowLong(Window, GWL_METHODDATA));
+    {$IFDEF CPUX64}
+    instanceWndProc.Code := pointer(GetWindowLongPtr(Window, GWL_METHODCODE));
+    instanceWndProc.Data := pointer(GetWindowLongPtr(Window, GWL_METHODDATA));
+    {$ELSE}
+    instanceWndProc.Code := pointer(GetWindowLong(Window, GWL_METHODCODE));
+    instanceWndProc.Data := pointer(GetWindowLong(Window, GWL_METHODDATA));
+    {$ENDIF ~CPUX64}
     if Assigned(TWndMethod(instanceWndProc)) then
     begin
       msg.msg := Message;
-      msg.wParam := WParam;
-      msg.lParam := LParam;
+      msg.wParam := {$IFDEF Unicode}WPARAM{$ENDIF}(aWParam);
+      msg.lParam := {$IFDEF Unicode}LPARAM{$ENDIF}(aLParam);
+      msg.Result := 0;
       TWndMethod(instanceWndProc)(msg);
       Result := msg.Result
     end
     else
-      Result := DefWindowProc(Window, Message, WParam,LParam);
+      Result := DefWindowProc(Window, Message, {$IFDEF Unicode}WPARAM{$ENDIF}(aWParam), {$IFDEF Unicode}LPARAM{$ENDIF}(aLParam));
   end; { DSiClassWndProc }
 
   {:Thread-safe AllocateHwnd.
@@ -3489,12 +5220,12 @@ var
       alreadyRegistered := GetClassInfo(HInstance, CDSiHiddenWindowName, tempClass);
       if (not alreadyRegistered) or (tempClass.lpfnWndProc <> @DSiClassWndProc) then begin
         if alreadyRegistered then
-          Windows.UnregisterClass(CDSiHiddenWindowName, HInstance);
+          {$IFDEF DSiScopedUnitNames}Winapi.{$ENDIF}Windows.UnregisterClass(CDSiHiddenWindowName, HInstance);
         utilWindowClass.lpszClassName := CDSiHiddenWindowName;
         utilWindowClass.hInstance := HInstance;
         utilWindowClass.lpfnWndProc := @DSiClassWndProc;
         utilWindowClass.cbWndExtra := SizeOf(TMethod);
-        if Windows.RegisterClass(utilWindowClass) = 0 then
+        if {$IFDEF DSiScopedUnitNames}Winapi.{$ENDIF}Windows.RegisterClass(utilWindowClass) = 0 then
           raise Exception.CreateFmt('Unable to register DSiWin32 hidden window class. %s',
             [SysErrorMessage(GetLastError)]);
       end;
@@ -3503,8 +5234,13 @@ var
       if Result = 0 then
         raise Exception.CreateFmt('Unable to create DSiWin32 hidden window. %s',
                 [SysErrorMessage(GetLastError)]);
-      SetWindowLong(Result, GWL_METHODDATA, Longint(TMethod(wndProcMethod).Data));
-      SetWindowLong(Result, GWL_METHODCODE, Longint(TMethod(wndProcMethod).Code));
+      {$IFDEF CPUX64}
+      SetWindowLongPtr(Result, GWL_METHODDATA, NativeInt(TMethod(wndProcMethod).Data));
+      SetWindowLongPtr(Result, GWL_METHODCODE, NativeInt(TMethod(wndProcMethod).Code));
+      {$ELSE}
+      SetWindowLong(Result, GWL_METHODDATA, DSiNativeInt(TMethod(wndProcMethod).Data));
+      SetWindowLong(Result, GWL_METHODCODE, DSiNativeInt(TMethod(wndProcMethod).Code));
+      {$ENDIF ~CPUX64}
       Inc(GDSiWndHandlerCount);
     finally LeaveCriticalSection(GDSiWndHandlerCritSect); end;
   end; { DSiAllocateHWnd }
@@ -3523,9 +5259,76 @@ var
     try
       Dec(GDSiWndHandlerCount);
       if GDSiWndHandlerCount <= 0 then
-        Windows.UnregisterClass(CDSiHiddenWindowName, HInstance);
+        {$IFDEF DSiScopedUnitNames}Winapi.{$ENDIF}Windows.UnregisterClass(CDSiHiddenWindowName, HInstance);
     finally LeaveCriticalSection(GDSiWndHandlerCritSect); end;
   end; { DSiDeallocateHWnd }
+
+  {:Uses PowerCfg to disable standby and hibernation.
+  }
+  function DSiDisableStandby: boolean;
+
+    function ExtractSchemeNumber(queryOut: TStringList; var schemeNum: integer): boolean;
+    var
+      ln  : string;
+      pNum: integer;
+    begin
+      //c:\> powercfg /query
+      //
+      //Field Description          Value
+      //-----------------          -----
+      //Name                       Home/Office Desk
+      //Numerical ID               0
+      //...
+      Result := false;
+      while (queryOut.Count > 0) and (Copy(queryOut[0], 1, 1) <> '-') do
+        queryOut.Delete(0);
+      if queryOut.Count >= 2 then begin
+        ln := queryOut[2];
+        pNum := Length(ln);
+        while (pNum > 0) and (ln[pNum] >= '0') and (ln[pNum] <= '9') do
+          Dec(pNum);
+        Inc(pNum);
+        Result := TryStrToInt(Copy(ln, pNum, Length(ln)), schemeNum);
+      end;
+    end; { ExtractSchemeNumber }
+
+  var
+    execExit : cardinal;
+    execOut  : TStringList;
+    execRes  : cardinal;
+    schemeNum: integer;
+    winVer   : TDSiWindowsVersion;
+  begin
+    Result := false;
+    SetLastError(ERROR_NOT_SUPPORTED);
+    execOut := TStringList.Create;
+    try
+      winVer := DSiGetTrueWindowsVersion;
+      if winVer >= wvWinXP then begin
+        if winVer < wvWinVista then begin
+          execRes := DSiExecuteAndCapture('powercfg.exe /query', execOut, '', execExit);
+          if (execRes = 0) or (not ExtractSchemeNumber(execOut, schemeNum)) then
+            Exit;
+          Result := (0 = DSiExecute('powercfg.exe /numerical /change ' + IntToStr(schemeNum) +
+                           ' /standby-timeout-ac 0 /standby-timeout-dc 0' +
+                           ' /hibernate-timeout-ac 0 /hibernate-timeout-dc 0', SW_HIDE, '', true));
+          if Result then
+            Result := (0 = DSiExecute('powercfg /hibernate off', SW_HIDE, '', true));
+        end
+        else begin
+          Result := (0 = DSiExecute('powercfg.exe -change -standby-timeout-ac 0', SW_HIDE, '', true));
+          if Result then
+            Result := (0 = DSiExecute('powercfg.exe -change -standby-timeout-dc 0', SW_HIDE, '', true));
+          if Result then
+            Result := (0 = DSiExecute('powercfg.exe -change -hibernate-timeout-ac 0', SW_HIDE, '', true));
+          if Result then
+            Result := (0 = DSiExecute('powercfg.exe -change -hibernate-timeout-dc 0', SW_HIDE, '', true));
+          if Result then // -hibernate will fail when run without admin privileges
+            DSiExecute('powercfg -hibernate off', SW_HIDE, '', true);
+        end;
+      end;
+    finally execOut.Free; end;
+  end; { DSiDisableStandby }
 
   {:Disables 'X' button and Alt+F4.
     @author  aoven
@@ -3721,13 +5524,15 @@ type
        oldSize := 0;
       registry.WriteString(CShellIconSize, IntToStr(oldSize + 1));
       SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE,
-        SPI_SETNONCLIENTMETRICS, 0, SMTO_ABORTIFHUNG, CTimeout, dwResult);
+        SPI_SETNONCLIENTMETRICS, 0, SMTO_ABORTIFHUNG, CTimeout,
+        {$IF CompilerVersion >= 23}@{$IFEND}dwResult);
       if oldSize > 0 then
         registry.WriteString(CShellIconSize, IntToStr(oldSize))
       else
         registry.DeleteValue(CShellIconSize);
       SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE,
-        SPI_SETNONCLIENTMETRICS,0, SMTO_ABORTIFHUNG, CTimeout, dwResult);
+        SPI_SETNONCLIENTMETRICS,0, SMTO_ABORTIFHUNG, CTimeout,
+        {$IF CompilerVersion >= 23}@{$IFEND}dwResult);
       registry.CloseKey;
     finally FreeAndNil(registry);end;
   end; { DSiRebuildDesktopIcons }
@@ -4042,10 +5847,10 @@ var
       idxEndFragment := idxStartFragment + Length(sHtml);
       idxEndHtml := idxEndFragment + Length(CHTMLExtro);
       description := CVersion +
-        SysUtils.Format('%s%.8d', [CStartHTML, idxStartHtml]) + #13#10 +
-        SysUtils.Format('%s%.8d', [CEndHTML, idxEndHtml]) + #13#10 +
-        SysUtils.Format('%s%.8d', [CStartFragment, idxStartFragment]) + #13#10 +
-        SysUtils.Format('%s%.8d', [CEndFragment, idxEndFragment]) + #13#10;
+        {$IFDEF DSiScopedUnitNames}System.{$ENDIF}SysUtils.Format('%s%.8d', [CStartHTML, idxStartHtml]) + #13#10 +
+        {$IFDEF DSiScopedUnitNames}System.{$ENDIF}SysUtils.Format('%s%.8d', [CEndHTML, idxEndHtml]) + #13#10 +
+        {$IFDEF DSiScopedUnitNames}System.{$ENDIF}SysUtils.Format('%s%.8d', [CStartFragment, idxStartFragment]) + #13#10 +
+        {$IFDEF DSiScopedUnitNames}System.{$ENDIF}SysUtils.Format('%s%.8d', [CEndFragment, idxEndFragment]) + #13#10;
       Result := description + CHTMLIntro + sHtml + CHTMLExtro;
     end; { MakeFragment }
 
@@ -4097,7 +5902,7 @@ var
   }
   function DSiGetAppCompatFlags(const exeName: string): string;
   var
-    wow64key: HKEY;
+    wow64key: longword;
   begin
     Result := DSiReadRegistry(
       'Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers',
@@ -4150,13 +5955,13 @@ var
     buffer    : PChar;
     bufferSize: DWORD;
   begin
-    bufferSize := MAX_COMPUTERNAME_LENGTH+1;
-    GetMem(buffer, bufferSize);
+    bufferSize := MAX_COMPUTERNAME_LENGTH + 1;
+    GetMem(buffer, bufferSize * SizeOf(char));
     try
       GetComputerName(buffer, bufferSize);
       SetLength(Result, StrLen(buffer));
       if Result <> '' then
-        Move(buffer^, Result[1], Length(Result));
+        Move(buffer^, Result[1], Length(Result) * SizeOf(char));
     finally FreeMem(buffer); end;
   end; { DSiGetComputerName }
 
@@ -4271,7 +6076,7 @@ var
         Result := '';
     end;
   end; { DSiGetEnvironmentVariable }
-  
+
   {:Returns location of a special folder.
     @author  Miha-R
     @since   2002-11-25
@@ -4281,7 +6086,7 @@ var
     path : PChar;
     pPIDL: PItemIDList;
   begin
-    GetMem(path, MAX_PATH);
+    GetMem(path, MAX_PATH * SizeOf(char));
     try
       if Succeeded(SHGetSpecialFolderLocation(0, CSIDL, pPIDL)) then begin
         SHGetPathFromIDList(pPIDL, path);
@@ -4310,6 +6115,22 @@ var
       layouts.AddObject(keyLayouts, pointer(keyLayList[iLayout]));
     end;
   end; { DSiGetKeyboardLayouts }
+
+  function DSiGetLogicalProcessorInfo(
+    var info: TSystemLogicalProcessorInformationArr): boolean;
+  var
+    infoLen: DWORD;
+  begin
+    infoLen := 0;
+    Result := DSiGetLogicalProcessorInformation(nil, infoLen);
+    if GetLastError = ERROR_INSUFFICIENT_BUFFER then begin
+      SetLength(info, infoLen div SizeOf(TSystemLogicalProcessorInformation));
+      infoLen := Length(info) * SizeOf(TSystemLogicalProcessorInformation);
+      Result := DSiGetLogicalProcessorInformation(@info[0], infoLen);
+    end;
+    if not Result then
+      SetLength(info, 0);
+  end; { DSiGetLogicalProcessorInfo }
 
   {:Returns My Documents folder.
     @author  xtreme
@@ -4393,7 +6214,13 @@ var
   begin { DSiGetTrueWindowsVersion }
     hKernel32 := GetModuleHandle('kernel32');
     Win32Check(hKernel32 <> 0);
-    if ExportsAPI(hKernel32, 'GetLocaleInfoEx') then
+    if ExportsAPI(hKernel32, 'CopyFile2') then
+      Result := wvWin8
+    else if ExportsAPI(hKernel32, 'CreateRemoteThreadEx') then
+      Result := wvWin7OrServer2008R2
+    else if ExportsAPI(hKernel32, 'AddSecureMemoryCacheCallback') then
+      Result := wvWinServer2008OrVistaSP1
+    else if ExportsAPI(hKernel32, 'GetLocaleInfoEx') then
       Result := wvWinVista
     else if ExportsAPI(hKernel32, 'GetLargePageMinimum') then
       Result := wvWinServer2003
@@ -4428,8 +6255,8 @@ var
     buffer    : PChar;
     bufferSize: DWORD;
   begin
-    bufferSize := 128;
-    buffer := AllocMem(bufferSize);
+    bufferSize := 256; //UNLEN from lmcons.h
+    buffer := AllocMem(bufferSize * SizeOf(char));
     try
       GetUserName(buffer, bufferSize);
       Result := string(buffer);
@@ -4475,10 +6302,10 @@ var
   var
     path: PChar;
   begin
-    GetMem(path, MAX_PATH);
+    GetMem(path, MAX_PATH * SizeOf(char));
     try
-      if GetWindowsDirectory(path, MAX_PATH) <> 0 then
-        Result := string(path)
+      if GetWindowsDirectory(path, MAX_PATH * SizeOf(char)) <> 0 then
+        Result := StrPas(path)
       else
         Result := '';
     finally FreeMem(path); end;
@@ -4490,7 +6317,9 @@ var
   }
   function DSiGetWindowsVersion: TDSiWindowsVersion;
   var
-    versionInfo: TOSVersionInfo;
+    versionInfo      : TOSVersionInfo;
+    versionInfoEx    : TOSVersionInfoEx;
+    versionInfoExFake: TOSVersionInfo absolute versionInfoEx;
   begin
     versionInfo.dwOSVersionInfoSize := SizeOf(versionInfo);
     GetVersionEx(versionInfo);
@@ -4526,7 +6355,22 @@ var
               2: Result := wvWinServer2003;
               else Result := wvWinNT
             end; //case versionInfo.dwMinorVersion
-          6: Result := wvWinVista;
+          6: begin
+            versionInfoEx.dwOSVersionInfoSize := SizeOf(versionInfoEx);
+            GetVersionEx(versionInfoExFake);
+            if versionInfoEx.wProductType = VER_NT_WORKSTATION then
+              case versionInfoEx.dwMinorVersion of
+                0: Result := wvWinVista;
+                1: Result := wvWin7;
+              else
+                Result := wvWin8;
+              end
+            else
+              if versionInfoEx.dwMinorVersion = 0 then
+                Result := wvWinServer2008
+              else
+                Result := wvWinServer2008R2;
+          end;
         end; //case versionInfo.dwMajorVersion
       end; //versionInfo.dwPlatformID
   end; { DSiGetWindowsVersion }
@@ -4541,7 +6385,7 @@ var
     PLF: PLogFont;
   begin
     Result := false;
-    NCM.cbSize := SizeOf(TNonClientMetrics);
+    NCM.cbSize := {$IFDEF Unicode}TNonClientMetrics.SizeOf{$ELSE}SizeOf(TNonClientMetrics){$ENDIF};
     if SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, @NCM, 0) then begin
       case aElement of
         ueMenu:          PLF := @NCM.lfMenuFont;
@@ -4595,7 +6439,7 @@ var
               break; //for iGroup
             end;
           end; //for iGroup
-          {$R+}
+          {$IFDEF RestoreR}{$R+}{$ENDIF}
           FreeSid(administrators);
         end;
         FreeMem(groups);
@@ -4623,6 +6467,84 @@ var
         DSiCloseServiceHandle(hSC);
     end;
   end; { DSiIsAdminLoggedOn }
+
+  {:Checks whether the code is signed and returns that value as a function result.
+    On the NT platform also returns the name of the signing certificate in the `certName`
+    parameter.
+    Based on the code by [Craig Peterson] published on the StackOverflow:
+    http://stackoverflow.com/questions/5993877/checking-digital-signature-programmatically-from-delphi
+    @author  Craig Peterson, gabr
+  }
+  function DSiIsCodeSigned(const exeFileName: string; var certName: AnsiString): boolean;
+  var
+    cert        : PWinCertificate;
+    certContext : PCCERT_CONTEXT;
+    certCount   : DWORD;
+    certNameLen : DWORD;
+    fileInfo    : TWinTrustFileInfo;
+    hExe        : HMODULE;
+    trustData   : TWinTrustData;
+    verifyParams: CRYPT_VERIFY_MESSAGE_PARA;
+  begin
+    certName := '';
+    // Verify that the exe is signed and the checksum matches.
+    FillChar(fileInfo, SizeOf(fileInfo), 0);
+    fileInfo.cbStruct := sizeof(fileInfo);
+    fileInfo.pcwszFilePath := PWideChar(WideString(exeFileName));
+    FillChar(trustData, SizeOf(trustData), 0);
+    trustData.cbStruct := sizeof(trustData);
+    trustData.dwUIChoice := WTD_UI_NONE;
+    trustData.fdwRevocationChecks := WTD_REVOKE_NONE;
+    trustData.dwUnionChoice := WTD_CHOICE_FILE;
+    trustData.pFile := @fileInfo;
+    Result := DSiWinVerifyTrust(INVALID_HANDLE_VALUE, WINTRUST_ACTION_GENERIC_VERIFY_V2,
+      @trustData) = ERROR_SUCCESS;
+    if Result and DSiIsWinNT then begin
+      // Verify that the exe was signed by our private key
+      hExe := CreateFile(PChar(exeFileName), GENERIC_READ, FILE_SHARE_READ,
+        nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL or FILE_FLAG_RANDOM_ACCESS, 0);
+      if hExe = INVALID_HANDLE_VALUE then
+        Exit;
+      try
+        // There should only be one certificate associated with the exe
+        if (not DSiImageEnumerateCertificates(hExe, CERT_SECTION_TYPE_ANY, certCount, nil, 0)) or
+           (certCount <> 1)
+        then
+          Exit;
+        // Read the certificate header so we can get the size needed for the full cert
+        GetMem(cert, SizeOf(TWinCertificate) + 3); // ImageGetCertificateHeader writes an DWORD at bCertificate for some reason
+        try
+          cert.dwLength := 0;
+          cert.wRevision := WIN_CERT_REVISION_1_0;
+          if not DSiImageGetCertificateHeader(hExe, 0, cert^) then
+            Exit;
+          // Read the full certificate
+          ReallocMem(cert, SizeOf(TWinCertificate) + cert.dwLength);
+          if not DSiImageGetCertificateData(hExe, 0, cert, cert.dwLength) then
+            Exit;
+          // Get the certificate context.  CryptVerifyMessageSignature has the
+          // side effect of creating a context for the signing certificate.
+          FillChar(verifyParams, SizeOf(verifyParams), 0);
+          verifyParams.cbSize := SizeOf(verifyParams);
+          verifyParams.dwMsgAndCertEncodingType := X509_ASN_ENCODING or PKCS_7_ASN_ENCODING;
+          if not DSiCryptVerifyMessageSignature(verifyParams, 0, @cert.bCertificate,
+             cert.dwLength, nil, nil, @certContext) then
+            Exit;
+          try
+            // Extract and compare the certificate's subject names.  Don't
+            // compare the entire certificate or the public key as those will
+            // change when the certificate is renewed.
+            certNameLen := DSiCertGetNameStringA(certContext,
+              CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nil, nil, 0);
+            SetLength(CertName, certNameLen - 1);
+            DSiCertGetNameStringA(certContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0,
+              nil, PAnsiChar(CertName), certNameLen);
+          finally DSiCertFreeCertificateContext(certContext); end;
+        finally FreeMem(cert); end;
+      finally CloseHandle(hExe); end;
+      Result := True;
+    end;
+  end; { DSiIsCodeSigned }
 
   {:Checks if disk is inserted in the specified drive.
     @author  Odisej
@@ -4662,6 +6584,20 @@ var
       Result := isWow64;
   end; { DSiIsWow64 }
 
+  {:Verifies local password.
+    @author  gabr
+    @since   2010-04-08
+  }
+  function DSiVerifyPassword(const username, password: string;
+    const domain: string): boolean;
+  var
+    logonHandle: THandle;
+  begin
+    Result := DSiLogonAs(username, password, domain, logonHandle);
+    if Result then
+      CloseHandle(logonHandle);
+  end; { DSiVerifyPassword }
+
 { Install }
 
   function UninstallRoot: HKEY;
@@ -4672,6 +6608,202 @@ var
       Result := HKEY_LOCAL_MACHINE;
   end; { UninstallRoot }
 
+  {:On Vista+, calls DSiAddApplicationToFirewallExceptionListAdvanced.
+    On XP, remaps parameters and calls DSiAddApplicationToFirewallExceptionListXP.
+    On lesser Windows, simply returns False. 
+    @author  gabr
+    @since   2009-10-28
+  }
+  function DSiAddApplicationToFirewallExceptionList(const entryName,
+    applicationFullPath: string; resolveConflict: TDSiFwResolveConflict;
+    description: string; grouping: string; serviceName: string;
+    protocols: TDSiFwIPProtocols; localPorts: string; profiles: TDSiFwIPProfiles): boolean;
+  var
+    profile    : TDSiFwIPProfile;
+    versionInfo: TOSVersionInfo;
+  begin
+    Result := false;
+    versionInfo.dwOSVersionInfoSize := SizeOf(versionInfo);
+    GetVersionEx(versionInfo);
+    if versionInfo.dwPlatformID = VER_PLATFORM_WIN32_NT then begin
+      if (versionInfo.dwMajorVersion = 5) and (versionInfo.dwMinorVersion >= 1) then begin
+        Result := true;
+        for profile := Low(TDSiFwIPProfile) to High(TDSiFwIPProfile) do
+          if (((fwProfileAll in profiles) and (profile <> fwProfileCurrent)) or (profile in profiles)) and
+             (profile in [fwProfileCurrent, fwProfileDomain, fwProfilePrivate])
+          then
+            if not DSiAddApplicationToFirewallExceptionListXP(entryName,
+                     applicationFullPath, resolveConflict, profile)
+            then
+              Result := false;
+      end
+      else if versionInfo.dwMajorVersion >= 6 then
+        Result := DSiAddApplicationToFirewallExceptionListAdvanced(entryName,
+          applicationFullPath, resolveConflict, description, grouping, serviceName,
+          protocols, localPorts, profiles);
+    end;
+  end; { DSiAddApplicationToFirewallExceptionList }
+
+  {:Adds application to the list of firewall exceptions, advanced style (Vista+).
+    Based on MSDN example http://msdn.microsoft.com/en-us/library/aa364695(VS.85).aspx.
+    For more information on parameters, check http://msdn.microsoft.com/en-us/library/aa365344(VS.85).aspx.
+    CoInitialize must be called before using this function.
+    @author  gabr
+    @since   2009-10-28
+  }
+  function DSiAddApplicationToFirewallExceptionListAdvanced(const entryName,
+    applicationFullPath: string; resolveConflict: TDSiFwResolveConflict;
+    description: string; grouping: string; serviceName: string;
+    protocols: TDSiFwIPProtocols; localPorts: string; profiles: TDSiFwIPProfiles): boolean;
+  var
+    fwPolicy2  : OleVariant;
+    profileMask: integer;
+    protocol   : TDSiFwIPProtocol;
+    rule       : OleVariant;
+  begin
+    Result := false;
+    try
+      case resolveConflict of
+        rcDuplicate:
+          {nothing to do};
+        rcOverwrite:
+          DSiRemoveApplicationFromFirewallExceptionListAdvanced(entryName);
+        rcSkip:
+          if DSiFindApplicationInFirewallExceptionListAdvanced(entryName, rule) then begin
+            Result := true;
+            Exit;
+          end;
+        else
+          raise Exception.CreateFmt('Unknown resolveConflict value %d', [Ord(resolveConflict)]);
+      end;
+      //http://msdn.microsoft.com/en-us/library/aa366458(VS.85).aspx
+      //Windows Firewall with Advanced Security was first released with Windows Vista.
+      fwPolicy2 := CreateOLEObject('HNetCfg.FwPolicy2');
+      if fwProfileCurrent in profiles then
+        profileMask := fwPolicy2.CurrentProfileTypes
+      else if fwProfileAll in profiles then
+        profileMask := NET_FW_PROFILE2_ALL
+      else begin
+        profileMask := 0;
+        if fwProfileDomain  in profiles then profileMask := profileMask OR NET_FW_PROFILE2_DOMAIN;
+        if fwProfilePrivate in profiles then profileMask := profileMask OR NET_FW_PROFILE2_PRIVATE;
+        if fwProfilePublic  in profiles then profileMask := profileMask OR NET_FW_PROFILE2_PUBLIC;
+      end;
+      for protocol := Low(TDSiFwIPProtocol) to High(TDSiFwIPProtocol) do
+        if protocol in protocols then begin
+          rule := CreateOLEObject('HNetCfg.FWRule');
+          rule.Name := entryName;
+          rule.Description := description;
+          rule.ApplicationName := applicationFullPath;
+          if protocol = fwProtoTCP then
+            rule.Protocol := NET_FW_IP_PROTOCOL_TCP
+          else if protocol = fwProtoUDP then
+            rule.Protocol := NET_FW_IP_PROTOCOL_UDP
+          else
+            raise Exception.Create('DSiAddApplicationToFirewallExceptionListAdvanced: ' +
+                                   'Unexpected protocol!');
+          rule.LocalPorts := localPorts;
+          rule.Enabled := true;
+          rule.Grouping := grouping;
+          rule.Profiles := profileMask;
+          rule.Action := NET_FW_ACTION_ALLOW;
+          if serviceName <> '' then
+            rule.ServiceName := serviceName;
+          fwPolicy2.Rules.Add(rule);
+        end;
+      Result := true;
+    except
+      on E: EOleSysError do
+        SetLastError(cardinal(E.ErrorCode));
+      else
+        SetLastError(ERROR_INVALID_FUNCTION);
+    end;
+  end; { DSiAddApplicationToFirewallExceptionListAdvanced }
+
+  {:Adds application to the list of firewall exceptions, XP style. Based on the code at
+    http://www.delphi3000.com/articles/article_5021.asp?SK=.
+    MSDN: http://msdn.microsoft.com/en-us/library/aa366449(VS.85).aspx
+    CoInitialize must be called before using this function.
+    @author  gabr
+    @since   2009-02-05
+  }
+  function DSiAddApplicationToFirewallExceptionListXP(const entryName,
+    applicationFullPath: string; resolveConflict: TDSiFwResolveConflict;
+    profile: TDSiFwIPProfile): boolean;
+  var
+    app      : OleVariant;
+    fwMgr    : OleVariant;
+    fwProfile: OleVariant;
+  begin
+    Result := false;
+    try
+      case resolveConflict of
+        rcDuplicate:
+          {nothing to do};
+        rcOverwrite:
+          DSiRemoveApplicationFromFirewallExceptionListXP(entryName, profile);
+        rcSkip:
+          if DSiFindApplicationInFirewallExceptionListXP(entryName, app, profile) then begin
+            Result := true;
+            Exit;
+          end;
+        else
+          raise Exception.CreateFmt('Unknown resolveConflict value %d', [Ord(resolveConflict)]);
+      end;
+      fwMgr := CreateOLEObject('HNetCfg.FwMgr');
+      if profile = fwProfileCurrent then
+        fwProfile := fwMgr.LocalPolicy.CurrentProfile
+      else if profile = fwProfileDomain then
+        fwProfile := fwMgr.LocalPolicy.GetProfileByType(NET_FW_PROFILE_DOMAIN)
+      else if profile = fwProfilePrivate {alias for 'standard'} then
+        fwProfile := fwMgr.LocalPolicy.GetProfileByType(NET_FW_PROFILE_STANDARD);
+      app := CreateOLEObject('HNetCfg.FwAuthorizedApplication');
+      app.ProcessImageFileName := DSiGetSubstPath(applicationFullPath);
+      app.Name := EntryName;
+      app.Scope := NET_FW_SCOPE_ALL;
+      app.IpVersion := NET_FW_IP_VERSION_ANY;
+      app.Enabled :=true;
+      fwProfile.AuthorizedApplications.Add(app);
+      Result := true;
+    except
+      on E: EOleSysError do
+        SetLastError(cardinal(E.ErrorCode));
+      else
+        SetLastError(ERROR_INVALID_FUNCTION);
+    end;
+  end; { DSiAddApplicationToFirewallExceptionListXP }
+
+  {:Adds application to the list of firewall exceptions. Based on the code at
+    http://www.delphi3000.com/articles/article_5021.asp?SK=.
+    CoInitialize must be called before using this function.
+    @author  gabr
+    @since   2009-02-05
+  }
+  function DSiAddPortToFirewallExceptionList(const entryName: string;
+    portNumber: cardinal): boolean;
+  var
+    fwMgr  : OleVariant;
+    port   : OleVariant;
+    profile: OleVariant;
+  begin
+    Result := false;
+    try
+      fwMgr := CreateOLEObject('HNetCfg.FwMgr');
+      profile := fwMgr.LocalPolicy.CurrentProfile;
+      port := CreateOLEObject('HNetCfg.FWOpenPort');
+      port.Name := EntryName;
+      port.Protocol := NET_FW_IP_PROTOCOL_TCP;
+      port.Port := PortNumber;
+      port.Scope := NET_FW_SCOPE_ALL;
+      port.Enabled := true;
+      profile.GloballyOpenPorts.Add(port);
+      Result := true;
+    except
+      on E: EOleSysError do 
+        SetLastError(cardinal(E.ErrorCode));
+    end;
+  end; { DSiAddPortToFirewallExceptionList }
+  
   {gp}
   function DSiAddUninstallInfo(const displayName, uninstallCommand, publisher,
     URLInfoAbout, displayVersion, helpLink, URLUpdateInfo: string): boolean;
@@ -4793,6 +6925,105 @@ var
     finally CoUninitialize; end;
   end; { DSiEditShortcut }
 
+  {:Finds rule in the firewall exception list, advanced style (Vista+).
+    CoInitialize must be called before using this function.
+    @author  gabr
+    @since   2010-07-27
+  }
+  function DSiFindApplicationInFirewallExceptionListAdvanced(const entryName: string;
+    var rule: OleVariant): boolean;
+  var
+    fwPolicy2: OleVariant;
+    ruleEnum : IEnumVariant;
+    value    : cardinal;
+  begin
+    Result := false;
+    fwPolicy2 := CreateOLEObject('HNetCfg.FwPolicy2');
+    if IUnknown(fwPolicy2.Rules._NewEnum).QueryInterface(IEnumVariant, ruleEnum) <> S_OK then
+      Exit;
+    while (ruleEnum.Next(1, rule, value) = S_OK) do begin
+      if SameText(entryName, rule.Name) then begin
+        Result := true;
+        Exit;
+      end;
+    end;
+    rule := Null;
+  end; { DSiFindApplicationInFirewallExceptionListAdvanced }
+
+  {:Finds rule in the firewall exception lis (XP).
+    CoInitialize must be called before using this function.
+    @author  gabr
+    @since   2010-07-27
+  }
+  function  DSiFindApplicationInFirewallExceptionListXP(const entryName: string;
+    var application: OleVariant; profile: TDSiFwIPProfile): boolean;
+  var
+    fwMgr      : OleVariant;
+    fwProfile  : OleVariant;
+    ruleEnum   : IEnumVariant;
+    value      : cardinal;
+  begin
+    Result := false;
+    fwMgr := CreateOLEObject('HNetCfg.FwMgr');
+    if profile = fwProfileDomain then
+      fwProfile := fwMgr.LocalPolicy.GetProfileByType(NET_FW_PROFILE_DOMAIN)
+    else if profile = fwProfilePrivate {alias for 'standard'} then
+      fwProfile := fwMgr.LocalPolicy.GetProfileByType(NET_FW_PROFILE_STANDARD)
+    else
+      fwProfile := fwMgr.LocalPolicy.CurrentProfile;
+    if IUnknown(fwProfile.AuthorizedApplications._NewEnum).QueryInterface(IEnumVariant, ruleEnum) <> S_OK then
+      Exit;
+    while (ruleEnum.Next(1, application, value) = S_OK) do begin
+      if SameText(entryName, application.Name) then begin
+        Result := true;
+        Exit;
+      end;
+    end;
+    application := Null;
+  end; { DSiFindApplicationInFirewallExceptionListXP }
+
+  {$R-}
+  function  DSiGetLogonSID(token: THandle; var logonSID: PSID): boolean;
+  var
+    dwLength: DWORD;
+    iGroup  : integer;
+    tkGroups: ^TOKEN_GROUPS;
+  begin
+    Result := false;
+    dwLength := 0;
+    tkGroups := nil;
+    try
+      if not GetTokenInformation(token, TokenGroups, tkGroups, 0, dwLength) then begin
+        if GetLastError <> ERROR_INSUFFICIENT_BUFFER then
+          Exit;
+        tkGroups := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, dwLength);
+        if tkGroups = nil then
+          Exit;
+        if not GetTokenInformation(token, TokenGroups, tkGroups, dwLength, dwLength) then
+          Exit;
+        // Loop through the groups to find the logon SID.
+        for iGroup := 0 to tkGroups.GroupCount - 1 do begin
+          if (tkGroups.Groups[iGroup].Attributes AND SE_GROUP_LOGON_ID) = SE_GROUP_LOGON_ID then begin
+            dwLength := GetLengthSid(tkGroups.Groups[iGroup].Sid);
+            logonSID := HeapAlloc(GetProcessHeap, HEAP_ZERO_MEMORY, dwLength);
+            if logonSID = nil then
+              Exit;
+            if not CopySid(dwLength, logonSID, tkGroups.Groups[iGroup].Sid) then begin
+              HeapFree(GetProcessHeap, 0, logonSID);
+              Exit;
+            end;
+            break; //for iGroup
+          end; //for iGroup
+        end;
+        Result := true;
+      end;
+    finally
+      if assigned(tkGroups) then
+        HeapFree(GetProcessHeap, 0, tkGroups);
+    end;
+  end; { DSiGetLogonSID }
+  {$IFDEF RestoreR}{$R+}{$ENDIF}
+
   {:Extracts executable path and work dir from the LNK file.
     @author  Cavlji
     @since   2006-06-20
@@ -4848,9 +7079,12 @@ var
   var
     _Register: TDllRegisterServer;
     DLLHandle: THandle;
+    OldMode  : DWORD;
   begin
     Result := E_FAIL;
+    OldMode := SetErrorMode (SEM_NOOPENFILEERRORBOX);
     DLLHandle := LoadLibrary(PChar(FileName));
+    SetErrorMode (OldMode);
     if DLLHandle > 0 then
     try
       if RegisterDLL then
@@ -4863,13 +7097,100 @@ var
         Result := E_NOTIMPL;
     finally FreeLibrary(DLLHandle); end;
   end; { DSiRegisterActiveX }
-  
+
   {gp}
   procedure DSiRegisterRunOnce(const applicationName, applicationPath: string);
   begin
     DSiWriteRegistry('SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce',
       applicationName, applicationPath);
   end; { DSiRegisterRunOnce }
+
+  {:On Vista+, calls DSiRemoveApplicationFromFirewallExceptionListAdvanced.
+    On XP, remaps parameters and calls DSiRemoveApplicationFromFirewallExceptionListXP.
+    On lesser Windows, simply returns False.
+    @author  gabr
+    @since   2009-10-28
+  }
+  function DSiRemoveApplicationFromFirewallExceptionList(const entryName,
+    applicationFullPath: string): boolean;
+  var
+    versionInfo: TOSVersionInfo;
+  begin
+    Result := false;
+    versionInfo.dwOSVersionInfoSize := SizeOf(versionInfo);
+    GetVersionEx(versionInfo);
+    if versionInfo.dwPlatformID = VER_PLATFORM_WIN32_NT then begin
+      if (versionInfo.dwMajorVersion = 5) and (versionInfo.dwMinorVersion >= 1) then
+        Result := DSiRemoveApplicationFromFirewallExceptionListXP(applicationFullPath)
+      else if versionInfo.dwMajorVersion >= 6 then
+        Result := DSiRemoveApplicationFromFirewallExceptionListAdvanced(entryName);
+    end;
+  end; { DSiRemoveApplicationFromFirewallExceptionList }
+
+  {:Removes application from the firewall exception list, advanced style (Vista+).
+    @author  gabr
+    @since   2009-10-28
+  }
+  function  DSiRemoveApplicationFromFirewallExceptionListAdvanced(const entryName: string): boolean;
+  var
+    fwPolicy2: OleVariant;
+  begin
+    Result := false;
+    try
+      fwPolicy2 := CreateOLEObject('HNetCfg.FwPolicy2');
+      fwPolicy2.Rules.Remove(entryName);
+      Result := true;
+    except
+      on E: EOleSysError do
+        SetLastError(cardinal(E.ErrorCode));
+      else
+        SetLastError(ERROR_INVALID_FUNCTION);
+    end;
+  end; { DSiRemoveApplicationFromFirewallExceptionListAdvanced }
+
+  {:Removes application from the firewall exception list, XP style.
+    @author  gabr
+    @since   2009-10-28
+  }
+  function  DSiRemoveApplicationFromFirewallExceptionListXP(const applicationFullPath: string): boolean;
+  var
+    profile     : TDSiFwIPProfile;
+    removeResult: boolean;
+  begin
+    Result := false;
+    for profile := fwProfileDomain to fwProfilePublic do begin
+      removeResult := DSiRemoveApplicationFromFirewallExceptionListXP(applicationFullPath, profile);
+      Result := Result or removeResult;
+    end;
+  end; { DSiRemoveApplicationFromFirewallExceptionListXP }
+
+  {:Removes application from a specific profile in the firewall exception list, XP style.
+    @author  gabr
+    @since   2010-07-27
+  }
+  function  DSiRemoveApplicationFromFirewallExceptionListXP(const applicationFullPath: string;
+    profile: TDSiFwIPProfile): boolean;
+  var
+    fwMgr    : OleVariant;
+    fwProfile: OleVariant;
+  begin
+    Result := false;
+    try
+      fwMgr := CreateOLEObject('HNetCfg.FwMgr');
+      if profile = fwProfileDomain then
+        fwProfile := fwMgr.LocalPolicy.GetProfileByType(NET_FW_PROFILE_DOMAIN)
+      else if profile = fwProfilePrivate {alias for 'standard'} then
+        fwProfile := fwMgr.LocalPolicy.GetProfileByType(NET_FW_PROFILE_STANDARD)
+      else
+        fwProfile := fwMgr.LocalPolicy.CurrentProfile;
+      Result := fwProfile.AuthorizedApplications.Remove(DSiGetSubstPath(applicationFullPath)) = S_OK;
+    except
+      on E: EOleSysError do
+        SetLastError(cardinal(E.ErrorCode));
+      else
+        SetLastError(ERROR_INVALID_FUNCTION);
+    end;
+  end; { DSiRemoveApplicationFromFirewallExceptionListXP }
 
   {gp}
   procedure DSiRemoveRunOnce(const applicationName: string);
@@ -4907,8 +7228,8 @@ var
 { Time }
 
 threadvar
-  GLastTimeGetTime     : DWORD;
-  GTimeGetTimeBase     : int64;
+  GLastTimeGetTime: DWORD;
+  GTimeGetTimeBase: int64;
 
 var
   GPerformanceFrequency: int64;
@@ -4960,7 +7281,7 @@ var
     KillTimer(dtWindowHandle, 1);
     if (Interval <> 0) and Enabled and Assigned(OnTimer) then
       if SetTimer(dtWindowHandle, 1, Interval, nil) = 0 then
-        raise EOutOfResources.Create(SNoTimers);
+        RaiseLastOSError;
   end; { TDSiTimer.UpdateTimer }
 
   procedure TDSiTimer.WndProc(var msgRec: TMessage);
@@ -4975,6 +7296,19 @@ var
     end; //with msgRec
   end; { TDSiTimer.WndProc }
 
+  {:Converts time from Delphi TDateTime format to Windows TFileTime format.
+    @returns false if conversion failed.
+    @author  gabr
+    @since   2012-02-06
+  }
+  function DSiDateTimeToFileTime(dateTime: TDateTime; var fileTime: TFileTime): boolean;
+   var
+    sysTime: TSystemTime;
+  begin
+    DateTimeToSystemTime(dateTime, sysTime);
+    Result := SystemTimeToFileTime(sysTime, fileTime);
+  end; { DSiDateTimeToFileTime }
+
   {gp}
   function DSiElapsedSince(midTime, startTime: int64): int64;
   begin
@@ -4983,11 +7317,19 @@ var
     Result := midTime - startTime;
   end; { TDSiRegistry.DSiElapsedSince }
 
-  {gp}
+  {:Returns time elapsed since startTime, which must be a result of the GetTickCount.
+  }
   function DSiElapsedTime(startTime: int64): int64;
   begin
     Result := DSiElapsedSince(GetTickCount, startTime);
   end; { DSiElapsedTime }
+
+  {:Returns time elapsed since startTime, which must be a result of the DSiTimeGetTime64.
+  }
+  function DSiElapsedTime64(startTime: int64): int64;
+  begin
+    Result := DSiTimeGetTime64 - startTime;
+  end; { DSiElapsedTime64 }
 
   {:Converts time from Windows TFileTime format to Delphi TDateTime format.
     @returns 0 if conversion failed.
@@ -5025,16 +7367,31 @@ var
     Result := Result div 10;
   end; { DSiFileTimeToMicroSeconds }
 
-  {gp}
-  function DSiHasElapsed(startTime: int64; timeout: DWORD): boolean;
+  {:Checks whether the specified timeout_ms period has elapsed. Start time must be a value
+    returned from the GetTickCount.
+  }
+  function DSiHasElapsed(startTime: int64; timeout_ms: DWORD): boolean;
   begin
-    if timeout = 0 then
+    if timeout_ms = 0 then
       Result := true
-    else if timeout = INFINITE then
+    else if timeout_ms = INFINITE then
       Result := false
     else
-      Result := (DSiElapsedTime(startTime) > timeout);
+      Result := (DSiElapsedTime(startTime) > timeout_ms);
   end; { DSiHasElapsed }
+
+  {:Checks whether the specified timeout_ms period has elapsed. Start time must be a value
+    returned from the DSiTimeGetTime64.
+  }
+  function DSiHasElapsed64(startTime: int64; timeout_ms: DWORD): boolean;
+  begin
+    if timeout_ms = 0 then
+      Result := true
+    else if timeout_ms = INFINITE then
+      Result := false
+    else
+      Result := (DSiElapsedTime64(startTime) > timeout_ms);
+  end; { DSiHasElapsed64 }
 
   {:Converts value returned from QueryPerformanceCounter to milliseconds.
     @author  gabr
@@ -5105,6 +7462,11 @@ var
 
 function DSiInterlockedDecrement64(var addend: int64): int64; register;
 asm
+{$IFDEF CPUX64}
+  mov   rax, dword - 1
+  lock xadd [addend], rax
+  dec   rax
+{$ELSE}
 {     ->          EAX     addend }
 {     <-          EDX:EAX Result }
           PUSH    EDI
@@ -5130,10 +7492,16 @@ LOCK      CMPXCHG8B [EDI]
 
           POP     EBX
           POP     EDI
+{$ENDIF ~CPUX64}
 end; { DSiInterlockedDecrement64 }
 
-function DSiInterlockedIncrement64(var addend: int64): int64; register;
+function DSiInterlockedIncrement64(var addend: int64): int64;
 asm
+{$IFDEF CPUX64}
+  mov   rax, 1
+  lock xadd [addend], rax
+  inc   rax
+{$ELSE}
 {     ->          EAX     addend }
 {     <-          EDX:EAX Result }
           PUSH    EDI
@@ -5159,10 +7527,16 @@ LOCK      CMPXCHG8B [EDI]
 
           POP     EBX
           POP     EDI
+{$ENDIF ~CPUX64}
 end; { DSiInterlockedIncrement64 }
 
-function DSiInterlockedExchangeAdd64(var addend: int64; value: int64): int64; register;
+function DSiInterlockedExchangeAdd64(var addend: int64; value: int64): int64;
 asm
+{$IFDEF CPUX64}
+  mov   rax, value
+  lock  xadd [addend], value
+  mov   rax, value
+{$ELSE}
 {     ->          EAX     addend }
 {                 ESP+4   value  }
 {     <-          EDX:EAX Result }
@@ -5193,10 +7567,15 @@ LOCK      CMPXCHG8B [EBP]
           POP     EBP
           POP     ESI
           POP     EDI
+{$ENDIF ~CPUX64}
 end; { DSiInterlockedExchangeAdd64 }
 
-function DSiInterlockedExchange64(var target: int64; value: int64): int64; register;
+function DSiInterlockedExchange64(var target: int64; value: int64): int64;
 asm
+{$IFDEF CPUX64}
+  lock  xchg    [target], value
+  mov   rax, value
+{$ELSE}
 {     ->          EAX     target }
 {                 ESP+4   value  }
 {     <-          EDX:EAX Result }
@@ -5217,10 +7596,15 @@ LOCK      CMPXCHG8B [EDI]
 
           POP     EBX
           POP     EDI
+{$ENDIF ~CPUX64}
 end; { DSiInterlockedExchange64 }
 
-function DSiInterlockedCompareExchange64(var destination: int64; exchange, comparand: int64): int64; register;
+function DSiInterlockedCompareExchange64(var destination: int64; exchange, comparand: int64): int64;
 asm
+{$IFDEF CPUX64}
+  mov   rax, comparand
+  lock cmpxchg [destination], exchange
+{$ELSE}
 {     ->          EAX     destination }
 {                 ESP+4   exchange    }
 {                 ESP+12  comparand   }
@@ -5240,10 +7624,15 @@ LOCK      CMPXCHG8B [EDI]
 
           POP     EDI
           POP     EBX
+{$ENDIF ~CPUX64}
 end; { DSiInterlockedCompareExchange64 }
 
-function DSiInterlockedCompareExchange64(destination: PInt64; exchange, comparand: int64): int64; register;
+function DSiInterlockedCompareExchange64(destination: PInt64; exchange, comparand: int64): int64;
 asm
+{$IFDEF CPUX64}
+  mov   rax, comparand
+  lock cmpxchg [destination], exchange
+{$ELSE}
 {     ->          EAX     destination }
 {                 ESP+4   exchange    }
 {                 ESP+12  comparand   }
@@ -5263,6 +7652,7 @@ LOCK      CMPXCHG8B [EDI]
 
           POP     EDI
           POP     EBX
+{$ENDIF ~CPUX64}
 end; { DSiInterlockedCompareExchange64 }
 
 { DynaLoad }
@@ -5283,12 +7673,15 @@ var
   }
   function DSiLoadLibrary(const libFileName: string): HMODULE;
   var
-    hLib  : HMODULE;
-    idxLib: integer;
+    hLib   : HMODULE;
+    idxLib : integer;
+    OldMode: DWORD;
   begin
     idxLib := GLibraryList.IndexOf(libFileName);
     if idxLib < 0 then begin
+      OldMode := SetErrorMode (SEM_NOOPENFILEERRORBOX);
       hLib := LoadLibrary(PChar(libFileName));
+      SetErrorMode (OldMode);
       if hLib <> 0 then
         idxLib := GLibraryList.AddObject(libFileName, TObject(hLib));
     end;
@@ -5343,7 +7736,46 @@ var
     else
       Result := ERROR_NOT_SUPPORTED;
   end; { DSi9xNetShareDel }
-  
+
+  function DSiCertCreateCertificateContext(dwCertEncodingType: DWORD;
+    pbCertEncoded: PBYTE; cbCertEncoded: DWORD): PCCERT_CONTEXT; stdcall; //external 'Crypt32.dll';
+  begin
+    if not assigned(GCertCreateCertificateContext) then
+      GCertCreateCertificateContext := DSiGetProcAddress('crypt32.dll', 'CertCreateCertificateContext');
+    if assigned(GCertCreateCertificateContext) then
+      Result := GCertCreateCertificateContext(dwCertEncodingType, pbCertEncoded, cbCertEncoded)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := nil;
+    end;
+  end; { DSiCertCreateCertificateContext }
+
+  function DSiCertFreeCertificateContext(pCertContext: PCCERT_CONTEXT): BOOL; stdcall; //external 'Crypt32.dll';
+  begin
+    if not assigned(GCertFreeCertificateContext) then
+      GCertFreeCertificateContext := DSiGetProcAddress('crypt32.dll', 'CertFreeCertificateContext');
+    if assigned(GCertFreeCertificateContext) then
+      Result := GCertFreeCertificateContext(pCertContext)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiCertFreeCertificateContext }
+
+  function DSiCertGetNameStringA(pCertContext: PCCERT_CONTEXT; dwType: DWORD; dwFlags: DWORD;
+    pvTypePara: Pointer; pszNameString: PAnsiChar; cchNameString: DWORD): DWORD; stdcall;
+  begin
+    if not assigned(GCertGetNameStringA) then
+      GCertGetNameStringA := DSiGetProcAddress('crypt32.dll', 'CertGetNameStringA');
+    if assigned(GCertGetNameStringA) then
+      Result := GCertGetNameStringA(pCertContext, dwType, dwFlags, pvTypePara,
+        pszNameString, cchNameString)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := 0;
+    end;
+  end; { DSiCertGetNameStringA }
+
   function DSiCloseServiceHandle(hSCObject: SC_HANDLE): BOOL;
   begin
     if not assigned(GCloseServiceHandle) then
@@ -5363,16 +7795,21 @@ var
     dwCreationFlags: DWORD; lpEnvironment: pointer;
     lpCurrentDirectory: PChar; const lpStartupInfo: TStartupInfo;
     var lpProcessInformation: TProcessInformation): BOOL;
+  {$IFDEF Unicode}
+  var
+    commandLine: string;
+  {$ENDIF Unicode}
   begin
-    {$IFDEF Unicode} //Tiburon defines CreateProcessAsUser
-      Result := CreateProcessAsUser(hToken, lpApplicationName, lpCommandLine,
+    {$IFDEF Unicode}
+      commandLine := lpCommandLine;
+      {$IFDEF Unicode}UniqueString(commandLine);{$ENDIF Unicode}
+      Result := CreateProcessAsUser(hToken, lpApplicationName, PChar(commandLine),
         lpProcessAttributes, lpThreadAttributes, bInheritHandles,
         dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo,
         lpProcessInformation);
     {$ELSE}
       if not assigned(GCreateProcessAsUser) then
-        GCreateProcessAsUser := DSiGetProcAddress('advapi32.dll',
-          'CreateProcessAsUserA');
+        GCreateProcessAsUser := DSiGetProcAddress('advapi32.dll', 'CreateProcessAsUserA');
       if assigned(GCreateProcessAsUser) then
         Result := GCreateProcessAsUser(hToken, lpApplicationName, lpCommandLine,
           lpProcessAttributes, lpThreadAttributes, bInheritHandles,
@@ -5384,6 +7821,71 @@ var
       end;
     {$ENDIF Unicode}
   end; { DSiCreateProcessAsUser }
+
+  function DSiCreateProcessWithLogonW(lpUsername, lpDomain, lpPassword: PWideChar;
+    dwLogonFlags: DWORD; lpApplicationName, lpCommandLine: PWideChar;
+    dwCreationFlags: DWORD; lpEnvironment: pointer; lpCurrentDirectory: PWideChar;
+    const lpStartupInfo: TStartupInfoW; var lpProcessInformation: TProcessInformation): BOOL;
+  var
+    restoreLastError: IRestoreLastError;
+  var
+    commandLine: WideString;
+  begin
+    if not assigned(GCreateProcessWithLogonW) then
+      GCreateProcessWithLogonW := DSiGetProcAddress('advapi32.dll', 'CreateProcessWithLogonW');
+    if assigned(GCreateProcessWithLogonW) then begin
+      commandLine := lpCommandLine;
+      {$IFDEF Unicode}UniqueString(commandLine);{$ENDIF Unicode}
+      Result := GCreateProcessWithLogonW(lpUsername, lpDomain, lpPassword, dwLogonFlags,
+        lpApplicationName, PWideChar(commandLine), dwCreationFlags, lpEnvironment,
+        lpCurrentDirectory, lpStartupInfo, lpProcessInformation)
+    end
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+    restoreLastError := TRestoreLastError.Create;
+  end; { DSiCreateProcessWithLogonW }
+
+  function DSiCreateEnvironmentBlock(var lpEnvironment: pointer; hToken: THandle;
+    bInherit: BOOL): BOOL;
+  begin
+    if not assigned(GCreateEnvironmentBlock) then
+      GCreateEnvironmentBlock := DSiGetProcAddress('userenv.dll', 'CreateEnvironmentBlock');
+    if assigned(GCreateEnvironmentBlock) then
+      Result := GCreateEnvironmentBlock(lpEnvironment, hToken, bInherit)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiCreateEnvironmentBlock }
+
+  function DSiCryptVerifyMessageSignature(const pVerifyPara: CRYPT_VERIFY_MESSAGE_PARA;
+    dwSignerIndex: DWORD; pbSignedBlob: PByte; cbSignedBlob: DWORD; pbDecoded: PBYTE;
+    pcbDecoded: PDWORD; ppSignerCert: PCCERT_CONTEXT): BOOL; stdcall;
+  begin
+    if not assigned(GCryptVerifyMessageSignature) then
+      GCryptVerifyMessageSignature := DSiGetProcAddress('crypt32.dll', 'CryptVerifyMessageSignature');
+    if assigned(GCryptVerifyMessageSignature) then
+      Result := GCryptVerifyMessageSignature(pVerifypara, dwSignerIndex, pbSignedBlob,
+        cbSignedBlob, pbDecoded, pcbDecoded, ppSignerCert)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiCryptVerifyMessageSignature }
+
+  function DSiDestroyEnvironmentBlock(lpEnvironment: pointer): BOOL;
+  begin
+    if not assigned(GDestroyEnvironmentBlock) then
+      GDestroyEnvironmentBlock := DSiGetProcAddress('userenv.dll', 'DestroyEnvironmentBlock');
+    if assigned(GDestroyEnvironmentBlock) then
+      Result := GDestroyEnvironmentBlock(lpEnvironment)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiDestroyEnvironmentBlock }
 
   //http://msdn2.microsoft.com/en-us/library/aa969510.aspx
   function DSiDwmEnableComposition(uCompositionAction: UINT): HRESULT;
@@ -5424,11 +7926,25 @@ var
     end;
   end; { DSiEnumProcessModules }
 
+  function DSiGetLogicalProcessorInformation(
+    pBuffer: PSYSTEM_LOGICAL_PROCESSOR_INFORMATION;
+    var ReturnLength: DWORD): BOOL;
+  begin
+    if not assigned(GGetLogicalProcessorInformation) then
+      GGetLogicalProcessorInformation := DSiGetProcAddress('kernel32.dll', 'GetLogicalProcessorInformation');
+    if assigned(GGetLogicalProcessorInformation) then
+      Result := GGetLogicalProcessorInformation(pBuffer, ReturnLength)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiGetLogicalProcessorInformation }
+  
   function DSiGetModuleFileNameEx(hProcess: THandle; hModule: HMODULE; lpFilename: PChar;
     nSize: DWORD): DWORD; stdcall;
   begin
     if not assigned(GGetModuleFileNameEx) then
-      GGetModuleFileNameEx := DSiGetProcAddress('psapi.dll', 'GetModuleFileNameExA');
+      GGetModuleFileNameEx := DSiGetProcAddress('psapi.dll', 'GetModuleFileNameEx' + CAPISuffix);
     if assigned(GGetModuleFileNameEx) then
       Result := GGetModuleFileNameEx(hProcess, hModule, lpFilename, nSize)
     else begin
@@ -5441,7 +7957,7 @@ var
     nSize: DWORD): DWORD; stdcall;
   begin
     if not assigned(GGetProcessImageFileName) then
-      GGetProcessImageFileName := DSiGetProcAddress('psapi.dll', 'GetProcessImageFileNameA');
+      GGetProcessImageFileName := DSiGetProcAddress('psapi.dll', 'GetProcessImageFileName' + CAPISuffix);
     if assigned(GGetProcessImageFileName) then
       Result := GGetProcessImageFileName(hProcess, lpImageFileName, nSize)
     else begin
@@ -5450,10 +7966,6 @@ var
     end;
   end; { DSiGetProcessImageFileName }
 
-  {:Retrieves application compatibility flags for the specified application.
-    @since   2007-02-11
-    @author  Miha-R, gabr
-  }
   function DSiGetProcessMemoryInfo(process: THandle; memCounters: PProcessMemoryCounters;
     cb: DWORD): boolean; stdcall;
   begin
@@ -5461,11 +7973,86 @@ var
       GGetProcessMemoryInfo := DSiGetProcAddress('psapi.dll', 'GetProcessMemoryInfo');
     if assigned(GGetProcessMemoryInfo) then
       Result := GGetProcessMemoryInfo(process, memCounters, cb)
-    else begin
+    else begin        
       SetLastError(ERROR_NOT_SUPPORTED);
       Result := false;
     end;
   end; { DSiGetProcessMemoryInfo }
+
+  function DSiGetTickCount64: int64; stdcall;
+  begin
+    if not assigned(GGetTickCount64) then
+      GGetTickCount64 := DSiGetProcAddress('kernel32.dll', 'GetTickCount64');
+    if assigned(GGetTickCount64) then
+      Result := GGetTickCount64()
+    else
+      raise Exception.Create('Unsupported API: GetTickCount64');
+  end; { DSiGetTickCount64 }
+
+  function DSiGetUserProfileDirectoryW(hToken: THandle; lpProfileDir: PWideChar;
+    var lpcchSize: DWORD): BOOL;
+  begin
+    if not assigned(GGetUserProfileDirectoryW) then
+      GGetUserProfileDirectoryW := DSiGetProcAddress('userenv.dll', 'GetUserProfileDirectoryW');
+    if assigned(GGetUserProfileDirectoryW) then
+      Result := GGetUserProfileDirectoryW(hToken, lpProfileDir, lpcchSize)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiGetUserProfileDirectoryW }
+
+  function DSiGlobalMemoryStatusEx(memStatus: PMemoryStatusEx): boolean; stdcall;
+  begin
+    if not assigned(GGlobalMemoryStatusEx) then
+      GGlobalMemoryStatusEx := DSiGetProcAddress('kernel32.dll', 'GlobalMemoryStatusEx');
+    if assigned(GGlobalMemoryStatusEx) then
+      Result := GGlobalMemoryStatusEx(memStatus)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiGlobalMemoryStatusEx }
+
+  function DSiImageEnumerateCertificates(FileHandle: THandle; TypeFilter: WORD;
+    out CertificateCount: DWORD; Indices: PDWORD; IndexCount: Integer): BOOL; stdcall;
+  begin
+    if not assigned(GImageEnumerateCertificates) then
+      GImageEnumerateCertificates := DSiGetProcAddress('imagehlp.dll', 'ImageEnumerateCertificates');
+    if assigned(GImageEnumerateCertificates) then
+      Result := GImageEnumerateCertificates(FileHandle, TypeFilter, CertificateCount,
+        Indices, IndexCount)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiImageEnumerateCertificates }
+
+  function DSiImageGetCertificateData(FileHandle: THandle; CertificateIndex: Integer;
+    Certificate: PWinCertificate; var RequiredLength: DWORD): BOOL; stdcall;
+  begin
+    if not assigned(GImageGetCertificateData) then
+      GImageGetCertificateData := DSiGetProcAddress('imagehlp.dll', 'ImageGetCertificateData');
+    if assigned(GImageGetCertificateData) then
+      Result := GImageGetCertificateData(FileHandle, CertificateIndex, Certificate, RequiredLength)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiImageGetCertificateData }
+
+  function DSiImageGetCertificateHeader(FileHandle: THandle; CertificateIndex: Integer;
+    var CertificateHeader: TWinCertificate): BOOL; stdcall;
+  begin
+    if not assigned(GImageGetCertificateHeader) then
+      GImageGetCertificateHeader := DSiGetProcAddress('imagehlp.dll', 'ImageGetCertificateHeader');
+    if assigned(GImageGetCertificateHeader) then
+      Result := GImageGetCertificateHeader(FileHandle, CertificateIndex, CertificateHeader)
+    else begin
+      SetLastError(ERROR_NOT_SUPPORTED);
+      Result := false;
+    end;
+  end; { DSiImageGetCertificateHeader }
 
   function DSiImpersonateLoggedOnUser(hToken: THandle): BOOL; stdcall;
   begin
@@ -5483,7 +8070,7 @@ var
   function DSiIsWow64Process(hProcess: THandle; var wow64Process: BOOL): BOOL; stdcall;
   begin
     if not assigned(GIsWow64Process) then
-      GIsWow64Process := DSiGetProcAddress('kernel32', 'IsWow64Process');
+      GIsWow64Process := DSiGetProcAddress('kernel32.dll', 'IsWow64Process');
     if assigned(GIsWow64Process) then
       Result := GIsWow64Process(hProcess, wow64Process)
     else begin
@@ -5495,7 +8082,7 @@ var
   function DSiLogonUser(lpszUsername, lpszDomain, lpszPassword: PChar;
     dwLogonType, dwLogonProvider: DWORD; var phToken: THandle): BOOL;
   begin
-    {$IFDEF Unicode} //Tiburon defines LogonUser
+    {$IFDEF Unicode}
       Result := LogonUser(lpszUsername, lpszDomain, lpszPassword, dwLogonType,
         dwLogonProvider, phToken);
     {$ELSE}
@@ -5525,7 +8112,7 @@ var
   end; { DSiNetApiBufferFree }
 
   function DSiNetWkstaGetInfo(servername: PChar; level: cardinal;
-    out bufptr: Pointer): cardinal; stdcall;
+    out bufptr: pointer): cardinal; stdcall;
   begin
     if not assigned(GNetWkstaGetInfo) then
       GNetWkstaGetInfo := DSiGetProcAddress('netapi32.dll', 'NetWkstaGetInfo');
@@ -5561,7 +8148,7 @@ var
     dwDesiredAccess: DWORD): SC_HANDLE; stdcall;
   begin
     if not assigned(GOpenSCManager) then
-      GOpenSCManager := DSiGetProcAddress('advapi32.dll', 'OpenSCManagerA');
+      GOpenSCManager := DSiGetProcAddress('advapi32.dll', 'OpenSCManager' + CAPISuffix);
     if assigned(GOpenSCManager) then
       Result := GOpenSCManager(lpMachineName, lpDatabaseName, dwDesiredAccess)
     else begin
@@ -5585,7 +8172,7 @@ var
   function DSiSetDllDirectory(path: PChar): boolean; stdcall;
   begin
     if not assigned(GSetDllDirectory) then
-      GSetDllDirectory := DSiGetProcAddress('kernel32.dll', 'SetDllDirectoryA');
+      GSetDllDirectory := DSiGetProcAddress('kernel32.dll', 'SetDllDirectory' + CAPISuffix);
     if assigned(GSetDllDirectory) then
       Result := GSetDllDirectory(path)
     else
@@ -5606,25 +8193,139 @@ var
     dwFlags: DWORD): HRESULT; stdcall;
   begin
     if not assigned(GSHEmptyRecycleBin) then
-      GSHEmptyRecycleBin := DSiGetProcAddress('shell32.dll',
-        'SHEmptyRecycleBinA');
+      GSHEmptyRecycleBin := DSiGetProcAddress('shell32.dll', 'SHEmptyRecycleBin' + CAPISuffix);
     if assigned(GSHEmptyRecycleBin) then
       Result := GSHEmptyRecycleBin(Wnd, pszRootPath, dwFlags)
     else
       Result := S_FALSE;
   end; { DSiSHEmptyRecycleBin }
 
+  function DSiWinVerifyTrust(hwnd: HWND; const ActionID: TGUID;
+    ActionData: Pointer): Longint; stdcall;
+  begin
+    if not assigned(GWinVerifyTrust) then
+      GWinVerifyTrust := DSiGetProcAddress('wintrust.dll', 'WinVerifyTrust');
+    if assigned(GWinVerifyTrust) then
+      Result := GWinVerifyTrust(hwnd, ActionID, ActionData)
+    else
+      Result := TRUST_E_ACTION_UNKNOWN;
+  end; { DSiWinVerifyTrust }
+
+  function DSiWow64DisableWow64FsRedirection(var oldStatus: pointer): BOOL; stdcall;
+  begin
+    if not assigned(GWow64DisableWow64FsRedirection) then
+      GWow64DisableWow64FsRedirection := DSiGetProcAddress('kernel32.dll', 'Wow64DisableWow64FsRedirection');
+    if assigned(GWow64DisableWow64FsRedirection) then
+      Result := GWow64DisableWow64FsRedirection(oldStatus)
+    else
+      Result := false;
+  end; { DSiWow64DisableWow64FsRedirection }
+
+  function DSiWow64RevertWow64FsRedirection(const oldStatus: pointer): BOOL; stdcall;
+  begin
+    if not assigned(GWow64RevertWow64FsRedirection) then
+      GWow64RevertWow64FsRedirection := DSiGetProcAddress('kernel32.dll', 'Wow64RevertWow64FsRedirection');
+    if assigned(GWow64RevertWow64FsRedirection) then
+      Result := GWow64RevertWow64FsRedirection(oldStatus)
+    else
+      Result := false;
+  end; { DSiWow64RevertWow64FsRedirection }
+
+{ TRestoreLastError }
+
+constructor TRestoreLastError.Create;
+begin
+  inherited Create;
+  rleLastError := GetLastError;
+end; { TRestoreLastError.Create }
+
+destructor TRestoreLastError.Destroy;
+begin
+  SetLastError(rleLastError);
+  inherited;
+end; { TRestoreLastError.Destroy }
+
+{ TBackgroundTask }
+
+constructor TBackgroundTask.Create(waitObject: THandle);
+begin
+  inherited Create;
+  btWaitObject := waitObject;
+end; { TBackgroundTask.Create }
+
+{ TCleanupAces }
+
+procedure TCleanupAces.Awaited;
+begin
+  if assigned(caSid) then begin
+    if caWindowStation <> 0 then
+      DSiRemoveAceFromWindowStation(caWindowStation, caSid);
+    if caDesktop <> 0 then
+      DSiRemoveAceFromDesktop(caDesktop, caSid);
+  end;
+end; { TCleanupAces.Awaited }
+
+constructor TCleanupAces.Create(waitObject: THandle; windowStation: HWINSTA;
+  desktop: HDESK; sid: PSID);
+var
+  waitHandle: THandle;
+begin
+  Win32Check(DuplicateHandle(GetCurrentProcess, waitObject, GetCurrentProcess,
+      @waitHandle, 0, false, DUPLICATE_SAME_ACCESS));
+  inherited Create(waitHandle);
+  caWindowStation := windowStation;
+  caDesktop := desktop;
+  caSid := sid;
+end; { TCleanupAces.Create }
+
+destructor TCleanupAces.Destroy;
+begin
+  if assigned(caSid) then 
+    HeapFree(GetProcessHeap, 0, caSid);
+  if caWindowStation <> 0 then
+    CloseWindowStation(caWindowStation);
+  if caDesktop <> 0 then
+    CloseDesktop(caDesktop);
+  inherited;
+end; { TCleanupAces.Destroy }
+
+{ TBackgroundThread }
+
+constructor TBackgroundThread.Create(task: TBackgroundTask);
+begin
+  btTask := task;
+  FreeOnTerminate := true;
+  inherited Create(false);
+end; { TBackgroundThread.Create }
+
+procedure TBackgroundThread.Execute;
+begin
+  if DSiWaitForTwoObjects(GTerminateBackgroundTasks, btTask.WaitObject, false, INFINITE) = WAIT_OBJECT_1 then
+    btTask.Awaited;
+  FreeAndNil(btTask);
+end; { TBackgroundThread.Execute }
+
+{ initialization }
+
+procedure DynaLoadAPIs;
+begin
+  GInterlockedCompareExchange64 := DSiGetProcAddress('kernel.dll', 'InterlockedCompareExchange64');
+end; { DynaLoadAPIs }
+
 initialization
   InitializeCriticalSection(GDSiWndHandlerCritSect);
+  GTerminateBackgroundTasks := CreateEvent(nil, false, false, nil);
   GDSiWndHandlerCount := 0;
   GTimeGetTimeBase := 0;
   GLastTimeGetTime := 0;
   if not QueryPerformanceFrequency(GPerformanceFrequency) then
     GPerformanceFrequency := 0;
   GCF_HTML := RegisterClipboardFormat('HTML Format');
+  DynaLoadAPIs;
   timeBeginPeriod(1);
 finalization
   timeEndPeriod(1);
+  DSiCloseHandleAndNull(GTerminateBackgroundTasks);
   DeleteCriticalSection(GDSiWndHandlerCritSect);
   DSiUnloadLibrary;
   FreeAndNil(_GLibraryList);

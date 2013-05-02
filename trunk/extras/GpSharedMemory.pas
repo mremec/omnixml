@@ -4,7 +4,7 @@
 
 This software is distributed under the BSD license.
 
-Copyright (c) 2007, Primoz Gabrijelcic
+Copyright (c) 2009, Primoz Gabrijelcic
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -30,11 +30,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    Author            : Primoz Gabrijelcic
    Creation date     : 2001-06-12
-   Last modification : 2007-05-30
-   Version           : 4.11a
+   Last modification : 2010-12-25
+   Version           : 4.12a
    Tested OS         : Windows 95, 98, NT 4, 2000, XP
 </pre>*)(*
    History:
+     4.12a: 2010-12-25
+       - Units ExtCtrls and Forms are referenced only on pre-2007 Delphis (for
+         compatibility).
+     4.12: 2009-02-17
+       - Compatible with Delphi 2009.
+     4.11b: 2009-02-11
+       - AttachToThread must update synchronizer's owner thread.
      4.11a: 2007-05-30
        - AllocateHwnd and DeallocateHwnd replaced with thread-safe versions.
        - TTimer replaced with thread-safer TDSiTimer.
@@ -128,8 +135,13 @@ unit GpSharedMemory;
 
 interface
 
+{$DEFINE NeedExtCtrls}
+{$IFDEF ConditionalExpressions}
+  {$IF RTLVersion >= 18}{$UNDEF NeedExtCtrls}{$IFEND}
+{$ENDIF}
+
 uses
-  {$IFDEF Testing}GpTestEnvironment, GpIFF,{$ENDIF Testing}
+  {$IFDEF Testing}GpTestEnvironment, GpStuff,{$ENDIF Testing}
   Windows,
   Messages,
   SysUtils,
@@ -467,8 +479,10 @@ type
       [ 0]   <signature:8>
       [ 8]   <number of entries:4>
       [12]   <alignment filler:4>
-      [16]   <head sentinel:8>
-      [24]   <tail sentinel:8>
+      [16]   <head next:4>
+      [20]   <head prev:4>
+      [24]   <tail next:4>
+      [28]   <tail prev:4>
     @since   2003-09-25
   }
   TGpSharedLinkedList = class(TGpSharedMemoryCandy)
@@ -650,7 +664,7 @@ type
     bspAcquiredList: TList{TGpSharedMemory};
     bspIndex       : TGpSharedPoolIndex;
     bspLastError   : TGpSharedPoolError;
-    bspName        : string;
+    bspName        : AnsiString;
   protected
     function  AcquireIndex(checkIfInitialized: boolean = true): boolean; virtual;
     function  ClearError: boolean; virtual;
@@ -661,11 +675,11 @@ type
       doAcquireIndex: boolean): TGpSharedMemory; virtual;
     function  IsReader: boolean; virtual; abstract;
     function  IsReaderAlive: boolean; virtual;
-    function  ReaderMessageQueueName: string; virtual;
-    function  ReaderMutexName: string; virtual;
+    function  ReaderMessageQueueName: AnsiString; virtual;
+    function ReaderMutexName: AnsiString; virtual;
     procedure ReleaseIndex; virtual;
     function  SetError(errorCode: TGpSharedPoolError): boolean; virtual;
-    function  TokenPrefix: string;
+    function TokenPrefix: AnsiString;
     function  UnprotectedTryToResize: boolean; virtual;
     //:List of acquired buffers.
     property AcquiredList: TList read bspAcquiredList;
@@ -674,7 +688,7 @@ type
     //:Message queue object.
     property MessageQueue: TGpMessageQueue read GetMessageQueue;
   public
-    constructor Create(objectName: string); virtual;
+    constructor Create(objectName: AnsiString); virtual;
     destructor  Destroy; override;
     function  AcquireBuffer(timeout: DWORD): TGpSharedMemory;
     function  AcquireCopy(shm: TGpSharedMemory; timeout: DWORD): TGpSharedMemory;
@@ -683,7 +697,7 @@ type
     //:Last error code.
     property LastError: TGpSharedPoolError read bspLastError;
     //:Shared pool name.
-    property Name: string read bspName;
+    property Name: AnsiString read bspName;
   end; { TGpBaseSharedPool }
 
 const
@@ -751,9 +765,10 @@ type
             until false;
           end
           else if waitRes = (WAIT_OBJECT_0+2) then
-            reader.ProcessMessages
+            // do nothing
           else
             break; //repeat
+          reader.ProcessMessages
         until false;
         reader.Free;
       end;
@@ -785,7 +800,7 @@ type
     function  TryToResize: boolean; virtual;
     function  UnprotectedTryToResize: boolean; override;
   public
-    constructor Create(objectName: string); override;
+    constructor Create(objectName: AnsiString); override;
     destructor  Destroy; override;
     function  GetNextReceived: TGpSharedMemory;
     function  Initialize(initialBufferSize, maxBufferSize, startNumBuffers,
@@ -814,7 +829,7 @@ type
     function  GetMessageQueue: TGpMessageQueue; override;
     function  IsReader: boolean; override;
   public
-    constructor Create(objectName: string); override;
+    constructor Create(objectName: AnsiString); override;
     destructor  Destroy; override;
   end; { TGpSharedPoolWriter }
 
@@ -879,8 +894,10 @@ type
 implementation
 
 uses
+{$IFDEF NeedExtCtrls}
   ExtCtrls,
   Forms,
+{$ENDIF NeedExtCtrls}
   Math,
   DSiWin32,
   GpSecurity;
@@ -1274,10 +1291,10 @@ function TGpBaseSharedMemory.GetAsString: string;
 begin
   if not Acquired then
     raise EGpSharedMemory.CreateFmt(sNotAcquired, [Name]);
-  SetLength(Result,Size+1);
-  StrLCopy(@Result[1],DataPointer,Size);
-  Result[Size+1] := #0;
-  SetLength(Result,StrLen(PChar(Result)));
+  SetLength(Result, Size div SizeOf(char) + 1);
+  StrLCopy(PChar(@Result[1]), DataPointer, Size div SizeOf(char));
+  Result[Size div SizeOf(char) + 1] := #0;
+  SetLength(Result, StrLen(PChar(Result)));
 end; { TGpBaseSharedMemory.GetAsString }
 
 function TGpBaseSharedMemory.GetByte(byteOffset: integer): byte;
@@ -1407,8 +1424,8 @@ begin
   if cardinal(Length(Value)) >= GetUpperSize then
     raise EGpSharedMemory.CreateFmt(sStringIsTooLong, [Name, GetUpperSize]);
   if IsResizable then 
-    ResizeMemory(Length(Value)+1);
-  StrPCopy(DataPointer,Value);
+    ResizeMemory((Length(Value)+1)*SizeOf(char));
+  StrPCopy(DataPointer, Value);
 end; { TGpBaseSharedMemory.SetAsString }
 
 procedure TGpBaseSharedMemory.SetByte(byteOffset: integer; Value: byte);
@@ -1819,6 +1836,7 @@ end; { TGpSharedMemory.Destroy }
 procedure TGpSharedMemory.AttachToThread;
 begin
   gsmOwningThread := GetCurrentThreadID;
+  gsmSynchronizer.AttachToThread;
 end; { TGpSharedMemory.AttachToThread }
 
 {:Get data from the specified byte offset (0-based). Check if memory is acquired
@@ -3068,12 +3086,12 @@ end; { TGpBaseSharedPool.ClearError }
 {:Create shared pool object.
   @since   2002-05-29
 }        
-constructor TGpBaseSharedPool.Create(objectName: string);
+constructor TGpBaseSharedPool.Create(objectName: AnsiString);
 begin
   inherited Create;
   bspAcquiredList := TList.Create;
   bspName := objectName;
-  bspIndex := TGpSharedPoolIndex.Create(objectName, IsReader);
+  bspIndex := TGpSharedPoolIndex.Create(string(objectName), IsReader);
 end; { TGpBaseSharedPool.Create }
 
 {:Destroy shared pool object.
@@ -3102,7 +3120,7 @@ var
   testMutex: THandle{CreateMutex};
 begin
   Result := true; // to keep Delphi happy
-  testMutex := CreateMutex_AllowEveryone(false, PChar(ReaderMutexName));
+  testMutex := CreateMutex_AllowEveryone(false, string(ReaderMutexName));
   if testMutex = 0 then
     RaiseLastWin32Error
   else begin
@@ -3114,7 +3132,7 @@ end; { TGpBaseSharedPool.IsReaderAlive }
 {:Generate the name of the Reader's message queue.
   @since   2002-11-10
 }
-function TGpBaseSharedPool.ReaderMessageQueueName: string;
+function TGpBaseSharedPool.ReaderMessageQueueName: AnsiString;
 begin
   Result := Name + '/MQ';
 end; { TGpBaseSharedPool.ReaderMessageQueueName }
@@ -3122,7 +3140,7 @@ end; { TGpBaseSharedPool.ReaderMessageQueueName }
 {:Generate the name of the Reader's mutex.
   @since   2002-06-06
 }
-function TGpBaseSharedPool.ReaderMutexName: string;
+function TGpBaseSharedPool.ReaderMutexName: AnsiString;
 begin
   Result := Name + '/Reader';
 end; { TGpBaseSharedPool.ReaderMutexName }
@@ -3207,7 +3225,7 @@ begin
   Result := SetError(speInternalError);
 end; { TGpBaseSharedPool.UnprotectedTryToResize }
 
-function TGpBaseSharedPool.TokenPrefix: string;
+function TGpBaseSharedPool.TokenPrefix: AnsiString;
 begin
   Result := Name + '/Token/';
 end; { TGpBaseSharedPool.TokenPrefix }
@@ -3217,7 +3235,7 @@ end; { TGpBaseSharedPool.TokenPrefix }
 {:Create shared pool reader object and create message queue.
   @since   2002-06-04
 }
-constructor TGpSharedPoolReader.Create(objectName: string);
+constructor TGpSharedPoolReader.Create(objectName: AnsiString);
 begin
   inherited Create(objectName);
   sprMessageWindow := DSiAllocateHwnd(MessageMain);
@@ -3303,9 +3321,9 @@ begin
       else begin
         Result := SetError(Index.Initialize(initialBufferSize, maxBufferSize,
           startNumBuffers, maxNumBuffers, resizeIncrement, resizeThreshold,
-          minNumBuffers, sweepTimeoutSec, TGpToken.GenerateToken(TokenPrefix)));
+          minNumBuffers, sweepTimeoutSec, TGpToken.GenerateToken(string(TokenPrefix))));
         if Result then begin
-          sprReaderMutex := CreateMutex_AllowEveryone(false, PChar(ReaderMutexName));
+          sprReaderMutex := CreateMutex_AllowEveryone(false, string(ReaderMutexName));
           if sprReaderMutex = 0 then
             RaiseLastWin32Error;
           sprMessageQueueReader := TGpMessageQueueReader.Create(ReaderMessageQueueName,
@@ -3483,7 +3501,7 @@ end; { TGpSharedPoolReader.UnprotectedTryToResize }
 {:Create message queue writer.
   @since   2002-11-10
 }        
-constructor TGpSharedPoolWriter.Create(objectName: string);
+constructor TGpSharedPoolWriter.Create(objectName: AnsiString);
 begin
   inherited Create(objectName);
   sprMessageQueue := TGpMessageQueueWriter.Create(ReaderMessageQueueName,

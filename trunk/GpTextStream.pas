@@ -2,20 +2,6 @@
 
 unit GpTextStream;
 
-{$IFDEF VER100}{$DEFINE D3PLUS}{$ENDIF}
-{$IFDEF VER120}{$DEFINE D3PLUS}{$DEFINE D4PLUS}{$ENDIF}
-{$IFDEF VER130}{$DEFINE D3PLUS}{$DEFINE D4PLUS}{$ENDIF}
-{$IFDEF CONDITIONALEXPRESSIONS}
-  {$DEFINE D3PLUS}
-  {$DEFINE D4PLUS}
-  {$IF (RTLVersion >= 14)} // Delphi 6.0 or newer
-    {$DEFINE D6PLUS}
-  {$IFEND}
-  {$IF (RTLVersion >= 15)} // Delphi 7.0 or newer
-    {$DEFINE D7PLUS}
-  {$IFEND}
-{$ENDIF}
-
 (*:Stream wrapper class that automatically converts another stream (containing
    text data) into a Unicode stream. Underlying stream can contain 8-bit text
    (in any codepage) or 16-bit text (in 16-bit or UTF8 encoding).
@@ -24,7 +10,7 @@ unit GpTextStream;
 
 This software is distributed under the BSD license.
 
-Copyright (c) 2008, Primoz Gabrijelcic
+Copyright (c) 2012, Primoz Gabrijelcic
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -50,11 +36,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    Author           : Primoz Gabrijelcic
    Creation date    : 2001-07-17
-   Last modification: 2008-05-26
-   Version          : 1.06
+   Last modification: 2012-03-12
+   Version          : 1.10
    </pre>
 *)(*
    History:
+     1.10: 2012-03-12
+       - Implemented TGpTextMemoryStream.
+     1.09a: 2011-01-01
+       - [Erik Berry] 'Size' property has changed to int64 in Delphi 6.
+       - [Erik Berry] EnumLines is only compiled if compiler supports enumerators.
+     1.09: 2010-07-20
+       - Reversed Unicode streams were improperly read from.
+     1.08: 2010-05-25
+       - Implemented 'lines in a text stream' enumerator EnumLines.
+     1.07: 2010-01-25
+       - Implemented TGpTextStream.EOF.
+       - Implemented text stream filter FilterTxt.
      1.06: 2008-05-26
        - Changed Char -> AnsiChar in preparation for the Unicode Delphi. 
      1.05: 2008-05-05
@@ -82,6 +80,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        - Created from GpTextFile 3.0b (thanks to Miha Remec).
        - Fix UTF 8 decoding error in TGpTextStream.Read.
 *)
+
+{$IFDEF VER100}{$DEFINE D3PLUS}{$ENDIF}
+{$IFDEF VER120}{$DEFINE D3PLUS}{$DEFINE D4PLUS}{$ENDIF}
+{$IFDEF VER130}{$DEFINE D3PLUS}{$DEFINE D4PLUS}{$ENDIF}
+{$IFDEF CONDITIONALEXPRESSIONS}
+  {$DEFINE D3PLUS}
+  {$DEFINE D4PLUS}
+  {$IF (RTLVersion >= 14)} // Delphi 6.0 or newer
+    {$DEFINE D6PLUS}
+  {$IFEND}
+  {$IF (RTLVersion >= 15)} // Delphi 7.0 or newer
+    {$DEFINE D7PLUS}
+  {$IFEND}
+  {$IF CompilerVersion >= 18} // Delphi 2006 or newer
+    {$DEFINE GTS_AdvRec}
+  {$IFEND}
+  {$IF CompilerVersion >= 20} // Delphi 2009 or newer
+    {$DEFINE GTS_Anonymous}
+  {$IFEND}
+{$ENDIF}
 
 interface
 
@@ -204,9 +222,10 @@ type
     constructor Create(
       dataStream: TStream; access: TGpTSAccess;
       createFlags: TGpTSCreateFlags {$IFDEF D4plus}= []{$ENDIF};
-      codePage: word            {$IFDEF D4plus}= 0{$ENDIF}
+      codePage: word                {$IFDEF D4plus}= 0{$ENDIF}
       );
     destructor  Destroy; override;
+    function  EOF: boolean;
     function  Is16bit: boolean;
     function  Is32bit: boolean;
     function  IsUnicode: boolean;
@@ -227,15 +246,64 @@ type
     {:Stream size. Reintroduced to override GetSize (static in TStream) with
       faster version.
     }
-    property  Size: {$IFDEF D7PLUS}int64{$ELSE}longint{$ENDIF D7PLUS} read GetSize write SetSize;
+    property  Size: {$IFDEF D6PLUS}int64{$ELSE}longint{$ENDIF D6PLUS} read GetSize write SetSize;
     {:Last Windows error code.
     }
     property  WindowsError: DWORD read GetWindowsError;
   end; { TGpTextStream }
 
-function StringToWideString(const s: AnsiString; codePage: word): WideString;
-function WideStringToString (const ws: WideString; codePage: Word): AnsiString;
+  TGpTextMemoryStream = class(TGpTextStream)
+  private
+    tmsStream: TMemoryStream;
+  public
+    constructor Create(
+      access: TGpTSAccess;
+      createFlags: TGpTSCreateFlags {$IFDEF D4plus}= []{$ENDIF};
+      codePage: word                {$IFDEF D4plus}= 0{$ENDIF}
+      );
+    destructor  Destroy; override;
+    property Stream: TMemoryStream read tmsStream;
+  end; { TGpTextMemoryStream }
+
+  TGpWideString = {$IFDEF Unicode}string{$ELSE}WideString{$ENDIF};
+
+  TGpTextStreamEnumerator = class
+  private
+    tseCurrent: TGpWideString;
+    tseStream : TGpTextStream;
+  public
+    constructor Create(txtStream: TStream);
+    destructor  Destroy; override;
+    function  GetCurrent: TGpWideString;
+    function  MoveNext: boolean;
+    property Current: TGpWideString read GetCurrent;
+  end; { TGpTextStreamEnumerator }
+
+  {$IFDEF GTS_AdvRec}
+  TGpTextStreamEnumeratorFactory = record
+  private
+    tsefStream: TStream;
+  public
+    constructor Create(txtStream: TStream);
+    function  GetEnumerator: TGpTextStreamEnumerator;
+  end; { TGpTextStreamEnumeratorFactory }
+  {$ENDIF}
+
+function StringToWideString(const s: AnsiString; codePage: word = 0): WideString;
+function WideStringToString (const ws: WideString; codePage: Word = 0): AnsiString;
 function GetDefaultAnsiCodepage(LangID: LCID; defCP: integer): word;
+
+{$IFDEF GTS_AdvRec}
+function EnumLines(strStream: TStream): TGpTextStreamEnumeratorFactory;
+{$ENDIF}
+
+{$IFDEF GTS_Anonymous}
+type
+  TFilterProc = reference to function(const srcLine: string): string;
+
+procedure FilterTxt(srcStream, dstStream: TStream; isUnicode: boolean; filter: TFilterProc); overload;
+procedure FilterTxt(srcStream, dstStream: TGpTextStream; filter: TFilterProc); overload;
+{$ENDIF GTS_Anonymous}
 
 implementation
 
@@ -282,18 +350,39 @@ const
   sCannotWriteReversedUnicodeStream  = '%s:Cannot write to reversed Unicode stream.';
   sStreamFailed                      = '%s failed. ';
 
+{:Returns Locale String.
+  @param   Locale
+  @param   LCType
+  @returns string.
+}
+function GetLocaleString (Locale, LCType: DWORD): String;
+var
+  p: array[0..255] of Char;
+begin
+  if GetLocaleInfo (Locale, LCType, p, High (p)) > 0 then Result := p
+  else Result := '';
+end;
+
 {:Converts Ansi string to Unicode string using specified code page.
   @param   s        Ansi string.
   @param   codePage Code page to be used in conversion.
   @returns Converted wide string.
 }
-function StringToWideString(const s: AnsiString; codePage: word): WideString;
+function StringToWideString(const s: AnsiString; codePage: word = 0): WideString;
 var
   l: integer;
 begin
   if s = '' then
     Result := ''
   else begin
+    if codePage = 0 then
+    begin
+      codepage := StrToIntDef (GetLocaleString (GetUserDefaultLCID, LOCALE_IDEFAULTANSICODEPAGE), 0);
+      if codePage = 0 then
+        codePage := StrToIntDef (GetLocaleString (GetSystemDefaultLCID, LOCALE_IDEFAULTANSICODEPAGE), 0);
+      if codePage = 0 then
+        codePage := 1252;
+    end;
     l := MultiByteToWideChar(codePage, MB_PRECOMPOSED, PAnsiChar(@s[1]), -1, nil, 0);
     SetLength(Result, l-1);
     if l > 1 then
@@ -306,13 +395,21 @@ end; { StringToWideString }
   @param   codePage Code page to be used in conversion.
   @returns Converted ansi string.
 }
-function WideStringToString (const ws: WideString; codePage: Word): AnsiString;
+function WideStringToString (const ws: WideString; codePage: Word = 0): AnsiString;
 var
   l: integer;
 begin
   if ws = '' then
     Result := ''
-  else begin 
+  else begin
+    if codePage = 0 then
+    begin
+      codepage := StrToIntDef (GetLocaleString (GetUserDefaultLCID, LOCALE_IDEFAULTANSICODEPAGE), 0);
+      if codePage = 0 then
+        codePage := StrToIntDef (GetLocaleString (GetSystemDefaultLCID, LOCALE_IDEFAULTANSICODEPAGE), 0);
+      if codePage = 0 then
+        codePage := 1252;
+    end;
     l := WideCharToMultiByte(codePage,
            WC_COMPOSITECHECK or WC_DISCARDNS or WC_SEPCHARS or WC_DEFAULTCHAR,
            @ws[1], -1, nil, 0, nil, nil);
@@ -452,6 +549,39 @@ begin
     Result := defCP;
 end; { GetDefaultAnsiCodepage }
 
+{$IFDEF GTS_AdvRec}
+function EnumLines(strStream: TStream): TGpTextStreamEnumeratorFactory;
+begin
+  Result := TGpTextStreamEnumeratorFactory.Create(strStream);
+end; { EnumLines }
+{$ENDIF}
+
+{$IFDEF GTS_Anonymous}
+procedure FilterTxt(srcStream, dstStream: TStream; isUnicode: boolean; filter: TFilterProc);
+var
+  dstText: TGpTextStream;
+  flags  : TGpTSCreateFlags;
+  srcText: TGpTextStream;
+begin
+  flags := [];
+  if isUnicode then
+    flags := [tscfUnicode];
+  srcText := TGpTextStream.Create(srcStream, tsaccRead, flags);
+  try
+    dstText := TGpTextStream.Create(dstStream, tsaccWrite, flags);
+    try
+      FilterTxt(srcText, dstText, filter);
+    finally FreeAndNil(dstText); end;
+  finally FreeAndNil(srcText); end;
+end; { FilterTxt }
+
+procedure FilterTxt(srcStream, dstStream: TGpTextStream; filter: TFilterProc);
+begin
+  while not srcStream.EOF do
+    dstStream.Writeln(filter(srcStream.Readln));
+end; { FilterTxt }
+{$ENDIF GTS_Anonymous}
+
 { TGpTextStream }
 
 {:Allocates buffer for 8/16/8 bit conversions. If requested size is small
@@ -498,6 +628,11 @@ begin
   tsReadlnBuf := nil;
   inherited Destroy;
 end; { TGpTextStream.Destroy }
+
+function TGpTextStream.EOF: boolean;
+begin
+  Result := (Position >= Size);
+end; { TGpTextStream.EOF }
 
 {:Frees buffer for 8/16/8 bit conversions. If pre-allocated buffer is passed,
   nothing will be done.
@@ -782,10 +917,13 @@ var
   wch     : WideChar;
 
   function Reverse(w: word): word;
+  var
+    tmp: byte;
   begin
     if tscfReverseByteOrder in tsCreateFlags then begin
+      tmp := WordRec(Result).Hi;
       WordRec(Result).Hi := WordRec(w).Lo;
-      WordRec(Result).Lo := WordRec(w).Hi;
+      WordRec(Result).Lo := tmp;
     end
     else
       Result := w;
@@ -795,12 +933,14 @@ var
   var
     ich: integer;
     pwc: PWord;
+    tmp: byte;
   begin
     if tscfReverseByteOrder in tsCreateFlags then begin
       pwc := @Result[1];
-      for ich := 1 to Length(Result) div SizeOf(WideChar) do begin
+      for ich := 1 to Length(Result) do begin
+        tmp := WordRec(pwc^).Hi;
         WordRec(pwc^).Hi := WordRec(pwc^).Lo;
-        WordRec(pwc^).Lo := WordRec(pwc^).Hi;
+        WordRec(pwc^).Lo := tmp;
         Inc(pwc);
       end; //for
     end;
@@ -1041,5 +1181,60 @@ begin
   else
     Result := true;
 end; { TGpTextStream.WriteString }
+
+{ TGpTextMemoryStream }
+
+constructor TGpTextMemoryStream.Create(access: TGpTSAccess; createFlags: TGpTSCreateFlags;
+  codePage: word);
+begin
+  tmsStream := TMemoryStream.Create;
+  inherited Create(tmsStream, access, createFlags, codePage);
+end; { TGpTextMemoryStream.Create }
+
+destructor TGpTextMemoryStream.Destroy;
+begin
+  inherited;
+  FreeAndNil(tmsStream);
+end; { TGpTextMemoryStream.Destroy }
+
+{$IFDEF GTS_AdvRec}
+{ TGpTextStreamEnumeratorFactory }
+
+constructor TGpTextStreamEnumeratorFactory.Create(txtStream: TStream);
+begin
+  tsefStream := txtStream;
+end; { TGpTextStreamEnumeratorFactory.Create }
+
+function TGpTextStreamEnumeratorFactory.GetEnumerator: TGpTextStreamEnumerator;
+begin
+  Result := TGpTextStreamEnumerator.Create(tsefStream);
+end; { TGpTextStreamEnumeratorFactory.GetEnumerator }
+{$ENDIF}
+
+{ TGpTextStreamEnumerator }
+
+constructor TGpTextStreamEnumerator.Create(txtStream: TStream);
+begin
+  inherited Create;
+  tseStream := TGpTextStream.Create(txtStream, tsaccRead);
+end; { TGpTextStreamEnumerator.Create }
+
+destructor TGpTextStreamEnumerator.Destroy;
+begin
+  FreeAndNil(tseStream);
+  inherited;
+end; { TGpTextStreamEnumerator }
+
+function TGpTextStreamEnumerator.GetCurrent: TGpWideString;
+begin
+  Result := tseCurrent;
+end; { TGpTextStreamEnumerator.GetCurrent }
+
+function TGpTextStreamEnumerator.MoveNext: boolean;
+begin
+  Result := not tseStream.EOF;
+  if Result then
+    tseCurrent := tseStream.Readln;
+end; { TGpTextStreamEnumerator.MoveNext }
 
 end.

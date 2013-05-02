@@ -4,7 +4,7 @@
 
 This software is distributed under the BSD license.
 
-Copyright (c) 2008, Primoz Gabrijelcic
+Copyright (c) 2013, Primoz Gabrijelcic
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -28,25 +28,38 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-  Tested with Delphi 2006.
+  Tested with Delphi 2007 & 2009.
 
   Author           : Primoz Gabrijelcic
   Creation date    : 2002-04-17
-  Last modification: 2007-01-04
-  Version          : 1.20
+  Last modification: 2013-02-12
+  Version          : 1.24
 
   </pre>}{
 
   History:
+    1.24: 2013-02-12
+      - Implemented TGpMessageQueue.AsString.
+    1.23a: 2013-01-20
+      - Message queue count in TGpMessageQueue.Create is correctly initialized.
+    1.23: 2010-04-23
+       - Message queue works with Unicode Delphi, backwards compatible.
+    1.22a: 2009-12-11
+      - Unicode fixes.
+    1.22: 2009-02-11
+      - Implemented TGpSWMR.AttachToThread.
+    1.21a: 2008-11-21
+      - Added internal check to ensure that TGpSWMR.WaitToRead/WaitToWrite/Done are called
+        from one thread only.
     1.21: 2008-07-02
       - Added optional external message counter to the message queue.
     1.20: 2007-01-04
-       - New class TGpCircularBuffer.
+      - New class TGpCircularBuffer.
     1.19a: 2006-10-24
-       - Raise exception if caller tries to post a message that is larger than the message
-         queue.
+      - Raise exception if caller tries to post a message that is larger than the message
+        queue.
     1.19: 2006-05-30
-       - Implemented AttachToThread.
+      - Implemented AttachToThread.
     1.18: 2006-05-13
       - Added internal check to ensure that TGpMessageQueueReader.GetMessage is called
         from one thread only.
@@ -343,14 +356,17 @@ type
     gwrEventNoReaders: THandle;
     gwrMutexNoWriter : THandle;
     gwrName          : string;
+    gwrOwningThread  : DWORD;
     gwrSemNumReaders : THandle;
     gwrTimesMember   : integer;
   protected
+    procedure CheckOwner(const methodName: string);
     procedure DoneReading; virtual;
     procedure DoneWriting; virtual;
   public
     constructor Create(swmrName: string);
     destructor  Destroy; override;
+    procedure AttachToThread;
     procedure Done; virtual;
     function  WaitToRead(timeout: DWORD): boolean; virtual;  // true if allowed
     function  WaitToWrite(timeout: DWORD): boolean; virtual; // true if allowed
@@ -421,25 +437,25 @@ type
     mqInitMutex   : THandle{CreateMutex};
     mqMessageCount: PCardinal;
     mqMessageQueue: TObject; // actually, TGpSharedMemory, but to declare it here would create cyclic reference
-    mqName        : string;
+    mqName        : AnsiString;
     mqNewMessage  : THandle{CreateEvent};
     mqSize        : cardinal;
     {$IFDEF LogGpMessageQueue}
     mqLogger      : IGpLogger;
     {$ENDIF LogGpMessageQueue}
   protected
-    constructor Create(messageQueueName: string; messageQueueSize: cardinal;
+    constructor Create(messageQueueName: AnsiString; messageQueueSize: cardinal;
       queueMessageCount: PCardinal = nil); virtual;
     function  AppendMessage(flags: TGpMQMessageFlags; msg: UINT; wParam: WPARAM;
-      lParam: LPARAM; const msgData: string): TGpMQPostStatus;
+      lParam: LPARAM; const msgData: AnsiString): TGpMQPostStatus;
     procedure Cleanup; virtual; abstract;
     procedure Initialize; virtual; abstract;
     function  InternalBytesFree: cardinal;
     function  IsEmpty: boolean;
-    function  ReaderMutexName: string;
-    function  RetrieveMessage(removeFromQueue: boolean;
-      var flags: TGpMQMessageFlags; var msg: UINT; var wParam: WPARAM;
-      var lParam: LPARAM; var msgData: string): TGpMQGetStatus;
+    function  ReaderMutexName: AnsiString;
+    function  RetrieveMessage(removeFromQueue: boolean; var flags: TGpMQMessageFlags;
+      var msg: UINT; var wParam: WPARAM; var lParam: LPARAM;
+      var msgData: AnsiString): TGpMQGetStatus;
     procedure WrappedRetrieve(var buf; bufLen: cardinal);
     procedure WrappedStore(const buf; bufLen: cardinal);
     property InitializationMtx: THandle{CreateMutex} read mqInitMutex;
@@ -447,15 +463,18 @@ type
     property NewMessageEvt: THandle{CreateEvent} read mqNewMessage;
   public
     destructor  Destroy; override;
+    function  AsString(timeout: DWORD): string;
     procedure AttachToThread; virtual;
     function  BytesFree(timeout: DWORD): cardinal;
-    function  PostMessage(timeout: DWORD; const msgData: string): TGpMQPostStatus; overload;
-    function  PostMessage(timeout: DWORD; flags: TGpMQMessageFlags; msg: UINT;
-      wParam: WPARAM; lParam: LPARAM; const msgData: string): TGpMQPostStatus; overload;
-    function  PostMessage(timeout: DWORD; msg: UINT; const msgData: string): TGpMQPostStatus; overload;
+    function  PostMessage(timeout: DWORD; const msgData: AnsiString): TGpMQPostStatus;
+      overload;
+    function  PostMessage(timeout: DWORD; flags: TGpMQMessageFlags; msg: UINT; wParam: WPARAM;
+      lParam: LPARAM; const msgData: AnsiString): TGpMQPostStatus; overload;
+    function  PostMessage(timeout: DWORD; msg: UINT; const msgData: AnsiString):
+      TGpMQPostStatus; overload;
     function  PostMessage(timeout: DWORD; msg: UINT; wParam: WPARAM;
       lParam: LPARAM): TGpMQPostStatus; overload;
-    property Name: string read mqName;
+    property Name: AnsiString read mqName;
     property Size: cardinal read mqSize;
   end; { TGpMessageQueue }
 
@@ -476,28 +495,27 @@ type
     procedure Cleanup; override;
     procedure Initialize; override;
   public
-    constructor Create(messageQueueName: string; messageQueueSize: cardinal; newMessageEvent:
-      THandle{CreateEvent}; queueMessageCount: PCardinal = nil); reintroduce; overload;
-    constructor Create(messageQueueName: string; messageQueueSize: cardinal;
-      newMessageWindowHandle: HWND; newMessageMessage: UINT;
-      queueMessageCount: PCardinal = nil); reintroduce; overload;
+    constructor Create(messageQueueName: AnsiString; messageQueueSize: cardinal;
+      newMessageEvent: THandle{CreateEvent}; queueMessageCount: PCardinal = nil);
+      reintroduce; overload;
+    constructor Create(messageQueueName: AnsiString; messageQueueSize: cardinal;
+      newMessageWindowHandle: HWND; newMessageMessage: UINT; queueMessageCount: PCardinal =
+      nil); reintroduce; overload;
     procedure AttachToThread; override;
-    function  GetMessage(timeout: DWORD; var flags: TGpMQMessageFlags;
-      var msg: UINT; var wParam: WPARAM; var lParam: LPARAM;
-      var msgData: string): TGpMQGetStatus; overload;
-    function  GetMessage(timeout: DWORD; var msg: UINT;
-      var msgData: string): TGpMQGetStatus; overload;
+    function  GetMessage(timeout: DWORD; var flags: TGpMQMessageFlags; var msg: UINT; var
+      wParam: WPARAM; var lParam: LPARAM; var msgData: AnsiString): TGpMQGetStatus; overload;
+    function  GetMessage(timeout: DWORD; var msg: UINT; var msgData: AnsiString):
+      TGpMQGetStatus; overload;
     function  GetMessage(timeout: DWORD; var msg: UINT; var wParam: WPARAM;
       var lParam: LPARAM): TGpMQGetStatus; overload;
-    function  GetMessage(timeout: DWORD; var msgData: string): TGpMQGetStatus; overload;
-    function  PeekMessage(timeout: DWORD; var flags: TGpMQMessageFlags;
-      var msg: UINT; var wParam: WPARAM; var lParam: LPARAM;
-      var msgData: string): TGpMQGetStatus; overload;
-    function  PeekMessage(timeout: DWORD; var msg: UINT;
-      var msgData: string): TGpMQGetStatus; overload;
+    function  GetMessage(timeout: DWORD; var msgData: AnsiString): TGpMQGetStatus; overload;
+    function  PeekMessage(timeout: DWORD; var flags: TGpMQMessageFlags; var msg: UINT; var
+      wParam: WPARAM; var lParam: LPARAM; var msgData: AnsiString): TGpMQGetStatus; overload;
+    function  PeekMessage(timeout: DWORD; var msg: UINT; var msgData: AnsiString):
+      TGpMQGetStatus; overload;
     function  PeekMessage(timeout: DWORD; var msg: UINT; var wParam: WPARAM;
       var lParam: LPARAM): TGpMQGetStatus; overload;
-    function  PeekMessage(timeout: DWORD; var msgData: string): TGpMQGetStatus; overload;
+    function  PeekMessage(timeout: DWORD; var msgData: AnsiString): TGpMQGetStatus; overload;
   end; { TGpMessageQueueReader }
 
   {:Message queue writer attaches to the message queue and writes messages.
@@ -509,7 +527,7 @@ type
     procedure Cleanup; override;
     procedure Initialize; override;
   public
-    constructor Create(messageQueueName: string; messageQueueSize: cardinal;
+    constructor Create(messageQueueName: AnsiString; messageQueueSize: cardinal;
       queueMessageCount: PCardinal = nil); override;
     function  IsReaderAlive: boolean;
   end; { TGpMessageQueueWriter }
@@ -520,8 +538,10 @@ type
     procedure SetItem(idx: integer; const Value: TGpMessageQueue);
   public
     function  Add(gpMessageQueue: TGpMessageQueue): integer; reintroduce;
-    function  AddNewReader(messageQueueName: string; messageQueueSize: cardinal): TGpMessageQueue;
-    function  AddNewWriter(messageQueueName: string; messageQueueSize: cardinal): TGpMessageQueue;
+    function AddNewReader(messageQueueName: AnsiString; messageQueueSize: cardinal):
+      TGpMessageQueue;
+    function  AddNewWriter(messageQueueName: AnsiString; messageQueueSize: cardinal):
+      TGpMessageQueue;
     function  Extract(gpMessageQueue: TGpMessageQueue): TGpMessageQueue; reintroduce;
     function  IndexOf(gpMessageQueue: TGpMessageQueue): integer; reintroduce;
     procedure Insert(idx: integer; gpMessageQueue: TGpMessageQueue); reintroduce;
@@ -564,6 +584,9 @@ implementation
 uses
   ComObj,
   ActiveX,
+  {$IFDEF Unicode}
+  AnsiStrings,
+  {$ENDIF}
   GpSecurity,
   GpSharedMemory;
 
@@ -580,6 +603,9 @@ resourcestring
   sNotPublished             = 'Not published: %s';
   sQueueReaderAlreadyExists = 'Another reader for message queue %s already exists';
   sTokenAlreadyExists       = 'Token with this name already exists: %s';
+
+const
+  Hex_Chars: array [0..15] of char = '0123456789ABCDEF';
 
 type
   TGpMessageQueueReaderThread = class(TThread)
@@ -613,6 +639,26 @@ function Ofs(p: pointer; offset: cardinal): pointer;
 begin
   Result := pointer(cardinal(p)+offset);
 end; { Ofs }
+
+function HexStr (var num; byteCount: Longint): string;
+var
+  i   : integer;
+  pB  : PByte;
+  pRes: PChar;
+  res : string;
+begin
+  pB := @num;
+  SetLength(res, 2*byteCount);
+  if byteCount > 1 then 
+    Inc(pB, byteCount-1);
+  pRes := @res[1];
+  for i := byteCount downto 1 do begin
+    pRes^ := char(Hex_Chars[pB^ div 16]); Inc(pRes);
+    pRes^ := char(Hex_Chars[pB^ mod 16]); Inc(pRes);
+    dec (pB);
+  end;
+  Result := res;
+end; { HexStr }
 
 { TGpFlag }
 
@@ -1382,8 +1428,24 @@ begin
   inherited;
 end; { TGpSWMR.Destroy }
 
+procedure TGpSWMR.AttachToThread;
+begin
+  gwrOwningThread := GetCurrentThreadID;
+end; { TGpSWMR.AttachToThread }
+
+procedure TGpSWMR.CheckOwner(const methodName: string);
+begin
+  if gwrOwningThread = 0 then
+    gwrOwningThread := GetCurrentThreadID
+  else if gwrOwningThread <> GetCurrentThreadID then
+    raise Exception.CreateFmt(
+      'TGpSWMR<%s>.%s called from two threads: %d and %d',
+      [Name, methodName, gwrOwningThread, GetCurrentThreadID]);
+end; { TGpSWMR.CheckOwner }
+
 procedure TGpSWMR.Done;
 begin
+  CheckOwner('Done');
   if gwrTimesMember <= 0 then
     raise EGpSync.CreateFmt(sNotLocked, [Name])
   else begin
@@ -1422,6 +1484,7 @@ function TGpSWMR.WaitToRead(timeout: DWORD): boolean;
 var
   prevCount: longint;
 begin
+  CheckOwner('WaitToRead');
   if gwrTimesMember > 0 then
     Result := true
   else if WaitForSingleObject(gwrMutexNoWriter, timeout) <> WAIT_TIMEOUT then begin
@@ -1446,6 +1509,7 @@ function TGpSWMR.WaitToWrite(timeout: DWORD): boolean;
 var
   handles: array [1..2] of THandle;
 begin
+  CheckOwner('WaitToWrite');
   if gwrAccess = swmrAccRead then
     raise EGpSync.CreateFmt(sAlreadyReadlocked, [Name])
   else if gwrTimesMember > 0 then
@@ -1525,7 +1589,7 @@ end; { Shm }
   @since   2002-10-22
 }
 function TGpMessageQueue.AppendMessage(flags: TGpMQMessageFlags; msg: UINT;
-  wParam: WPARAM; lParam: LPARAM; const msgData: string): TGpMQPostStatus;
+  wParam: WPARAM; lParam: LPARAM; const msgData: AnsiString): TGpMQPostStatus;
 var
   dataLen  : integer;
   flagsInt : byte;
@@ -1539,7 +1603,7 @@ begin
   if mqfHasLParam in flags then
     Inc(totalSize, SizeOf(LPARAM));
   if mqfHasData in flags then
-    Inc(totalSize, 4+Length(msgData));
+    Inc(totalSize, 4+Length(msgData)*SizeOf(AnsiChar));
   if totalSize >= Size then
     raise EGpSync.CreateFmt('TGpMessageQueue.AppendMessage[%s]: Trying to send message ' +
       'of length %d, which is larger than the queue size %d', [Name, totalSize, Size])
@@ -1555,7 +1619,7 @@ begin
     if mqfHasLParam in flags then
       WrappedStore(lParam, SizeOf(LPARAM));
     if mqfHasData in flags then begin
-      dataLen := Length(msgData);
+      dataLen := Length(msgData)*SizeOf(AnsiChar);
       WrappedStore(dataLen, SizeOf(dataLen));
       if dataLen > 0 then
         WrappedStore(msgData[1], dataLen);
@@ -1595,8 +1659,8 @@ end; { TGpMessageQueue.BytesFree }
                             msg/wParam/lParam message uses 13 bytes
   @since   2002-10-22
 }
-constructor TGpMessageQueue.Create(messageQueueName: string; messageQueueSize: cardinal;
-  queueMessageCount: PCardinal);
+constructor TGpMessageQueue.Create(messageQueueName: AnsiString; messageQueueSize:
+  cardinal; queueMessageCount: PCardinal = nil);
 begin
   {$IFDEF LogGpMessageQueue}
   mqLogger := CreateGpLogger(ExtractFilePath(ParamStr(0))+'MessageQueue.log');
@@ -1608,14 +1672,15 @@ begin
   // If shared memory is created in next call, it will be initialized to 0.
   // Data and tail pointer will both be 0 meaning that message queue will be
   // considered empty.
-  mqMessageQueue := TGpSharedMemory.Create(Name+'$MessageQueueShm',
+  mqMessageQueue := TGpSharedMemory.Create(string(Name+'$MessageQueueShm'),
     messageQueueSize + SizeOf(longword) {head pointer} + SizeOf(longword) {tail pointer} + 1 {keep buffer from filling up},
     0);
+  mqMessageCount := queueMessageCount;
   mqSize := Shm(mqMessageQueue).Size;
-  mqNewMessage := CreateEvent_AllowEveryone(false, false, Name+'$NewMessageEvt');
+  mqNewMessage := CreateEvent_AllowEveryone(false, false, string(Name+'$NewMessageEvt'));
   if mqNewMessage = 0 then
     RaiseLastOSError;
-  mqInitMutex := CreateMutex_AllowEveryone(false, Name+'$InitializationMtx');
+  mqInitMutex := CreateMutex_AllowEveryone(false, string(Name+'$InitializationMtx'));
   if mqInitMutex = 0 then
     RaiseLastOSError;
   try
@@ -1640,6 +1705,25 @@ begin
   {$ENDIF LogGpMessageQueue}
   inherited;
 end; { TGpMessageQueue.Destroy }
+
+function TGpMessageQueue.AsString(timeout: DWORD): string;
+begin
+  {$IFDEF LogGpMessageQueue}
+  mqLogger.Log('mq[%s]:=> AsString');
+  try try
+  {$ENDIF LogGpMessageQueue}
+  if Shm(MQ).AcquireMemory(true, timeout) = nil then
+    Result := 'timeout'
+  else begin
+    try
+      Result := HexStr(Shm(MQ).DataPointer^, Shm(MQ).Size);
+    finally Shm(MQ).ReleaseMemory; end;
+  end;
+  {$IFDEF LogGpMessageQueue}
+  except on E: Exception do begin mqLogger.Log('mq[%s]: Exception %s', [mqName, E.Message]); raise; end; end;
+  finally mqLogger.Log('mq[%s]:<= AsString, Result = %s', [mqName, Result]); end;
+  {$ENDIF LogGpMessageQueue}
+end;
 
 procedure TGpMessageQueue.AttachToThread;
 begin
@@ -1673,9 +1757,8 @@ end; { TGpMessageQueue.IsEmpty }
 {:Post message into message queue.
   @since   2002-10-22
 }
-function TGpMessageQueue.PostMessage(timeout: DWORD;
-  flags: TGpMQMessageFlags; msg: UINT; wParam: WPARAM; lParam: LPARAM;
-  const msgData: string): TGpMQPostStatus;
+function TGpMessageQueue.PostMessage(timeout: DWORD; flags: TGpMQMessageFlags; msg: UINT;
+  wParam: WPARAM; lParam: LPARAM; const msgData: AnsiString): TGpMQPostStatus;
 begin
   {$IFDEF LogGpMessageQueue}
   mqLogger.Log('mq[%s]:=> PostMessage; %d/%d/%d/%d/%d/%s', [mqName, timeout, byte(flags), msg, wParam, lParam, msgData]);
@@ -1703,7 +1786,7 @@ end; { TGpMessageQueue.PostMessage }
 {:Post message into message queue.
   @since   2002-10-22
 }
-function TGpMessageQueue.PostMessage(timeout: DWORD; const msgData: string):
+function TGpMessageQueue.PostMessage(timeout: DWORD; const msgData: AnsiString):
   TGpMQPostStatus;
 begin
   {$IFDEF LogGpMessageQueue}
@@ -1738,8 +1821,8 @@ end; { TGpMessageQueue.PostMessage }
 {:Post message into message queue.
   @since   2002-10-22
 }
-function TGpMessageQueue.PostMessage(timeout: DWORD; msg: UINT;
-  const msgData: string): TGpMQPostStatus;
+function TGpMessageQueue.PostMessage(timeout: DWORD; msg: UINT; const msgData:
+  AnsiString): TGpMQPostStatus;
 begin
   {$IFDEF LogGpMessageQueue}
   mqLogger.Log('mq[%s]:=> PostMessage; %d/%d/%s', [mqName, timeout, msg, msgData]);
@@ -1755,7 +1838,7 @@ end; { TGpMessageQueue.PostMessage }
 {:Return name of the reader's mutex.
   @since   2002-12-01
 }
-function TGpMessageQueue.ReaderMutexName: string;
+function TGpMessageQueue.ReaderMutexName: AnsiString;
 begin
   Result := Name+'$SingleReaderMtx';
 end; { TGpMessageQueue.ReaderMutexName }
@@ -1765,8 +1848,8 @@ end; { TGpMessageQueue.ReaderMutexName }
   @since   2002-10-23
 }
 function TGpMessageQueue.RetrieveMessage(removeFromQueue: boolean;
-  var flags: TGpMQMessageFlags; var msg: UINT; var wParam: WPARAM;
-  var lParam: LPARAM; var msgData: string): TGpMQGetStatus;
+  var flags: TGpMQMessageFlags; var msg: UINT; var wParam: WPARAM; var lParam: LPARAM;
+  var msgData: AnsiString): TGpMQGetStatus;
 var
   dataLen   : integer;
   flagsInt  : byte;
@@ -1787,7 +1870,7 @@ begin
     if mqfHasData in flags then begin
       dataLen := Length(msgData);
       WrappedRetrieve(dataLen, SizeOf(dataLen));
-      SetLength(msgData, dataLen);
+      SetLength(msgData, dataLen div SizeOf(AnsiChar));
       if dataLen > 0 then
         WrappedRetrieve(msgData[1], dataLen);
     end;
@@ -1959,8 +2042,8 @@ end; { TGpMessageQueueReader.Cleanup }
   the event.
   @since   2002-10-22
 }        
-constructor TGpMessageQueueReader.Create(messageQueueName: string; messageQueueSize:
-  cardinal; newMessageEvent: THandle{CreateEvent}; queueMessageCount: PCardinal);
+constructor TGpMessageQueueReader.Create(messageQueueName: AnsiString; messageQueueSize:
+  cardinal; newMessageEvent: THandle{CreateEvent}; queueMessageCount: PCardinal = nil);
 begin
   mqrNewMessageEvent := newMessageEvent;
   inherited Create(messageQueueName, messageQueueSize, queueMessageCount);
@@ -1973,9 +2056,9 @@ end; { TGpMessageQueueReader.Create }
   the message to the specified window.
   @since   2002-10-22
 }
-constructor TGpMessageQueueReader.Create(messageQueueName: string; messageQueueSize:
+constructor TGpMessageQueueReader.Create(messageQueueName: AnsiString; messageQueueSize:
   cardinal; newMessageWindowHandle: HWND; newMessageMessage: UINT; queueMessageCount:
-  PCardinal);
+  PCardinal = nil);
 begin
   mqrNewMessageWindowHandle := newMessageWindowHandle;
   mqrNewMessageMessage := newMessageMessage;
@@ -1989,7 +2072,7 @@ function TGpMessageQueueReader.GetMessage(timeout: DWORD; var msg: UINT;
   var wParam: WPARAM; var lParam: LPARAM): TGpMQGetStatus;
 var
   flags  : TGpMQMessageFlags;
-  msgData: string;
+  msgData: AnsiString;
 begin
   {$IFDEF LogGpMessageQueue}
   mqLogger.Log('mq[%s]:=> GetMessage; %d/%d/%d/%d', [mqName, timeout, msg, wParam, lParam]);
@@ -2004,8 +2087,8 @@ begin
   {$ENDIF LogGpMessageQueue}
 end; { TGpMessageQueueReader.GetMessage }
 
-function TGpMessageQueueReader.GetMessage(timeout: DWORD;
-  var msgData: string): TGpMQGetStatus;
+function TGpMessageQueueReader.GetMessage(timeout: DWORD; var msgData: AnsiString):
+  TGpMQGetStatus;
 var
   flags  : TGpMQMessageFlags;
   lParam : Windows.LPARAM;
@@ -2025,9 +2108,9 @@ begin
   {$ENDIF LogGpMessageQueue}
 end; { TGpMessageQueueReader.GetMessage }
 
-function TGpMessageQueueReader.GetMessage(timeout: DWORD;
-  var flags: TGpMQMessageFlags; var msg: UINT; var wParam: WPARAM;
-  var lParam: LPARAM; var msgData: string): TGpMQGetStatus;
+function TGpMessageQueueReader.GetMessage(timeout: DWORD; var flags: TGpMQMessageFlags;
+  var msg: UINT; var wParam: WPARAM; var lParam: LPARAM; var msgData: AnsiString):
+  TGpMQGetStatus;
 begin
   {$IFDEF LogGpMessageQueue}
   mqLogger.Log('mq[%s]:=> GetMessage; %d/%d/%d/%d/%d/%s', [mqName, timeout, byte(flags), msg, wParam, lParam, msgData]);
@@ -2044,7 +2127,6 @@ begin
   else begin
     try
       Result := RetrieveMessage(true, flags, msg, wParam, lParam, msgData);
-//      ' if not is empty, set new message event (don't send a message)
     finally Shm(MQ).ReleaseMemory; end;
   end;
   {$IFDEF LogGpMessageQueue}
@@ -2053,8 +2135,8 @@ begin
   {$ENDIF LogGpMessageQueue}
 end; { TGpMessageQueueReader.GetMessage }
 
-function TGpMessageQueueReader.GetMessage(timeout: DWORD; var msg: UINT;
-  var msgData: string): TGpMQGetStatus;
+function TGpMessageQueueReader.GetMessage(timeout: DWORD; var msg: UINT; var msgData:
+  AnsiString): TGpMQGetStatus;
 var
   flags : TGpMQMessageFlags;
   lParam: Windows.LPARAM;
@@ -2080,7 +2162,7 @@ procedure TGpMessageQueueReader.Initialize;
 begin
   WaitForSingleobject(InitializationMtx, INFINITE); // prevent race condition with Writer's IsReaderAlive
   try
-    mqrSingleReader := CreateMutex_AllowEveryone(false, ReaderMutexName);
+    mqrSingleReader := CreateMutex_AllowEveryone(false, string(ReaderMutexName));
     if mqrSingleReader = 0 then
       RaiseLastOSError
     else if GetLastError = ERROR_ALREADY_EXISTS then begin
@@ -2097,7 +2179,7 @@ function TGpMessageQueueReader.PeekMessage(timeout: DWORD; var msg: UINT;
   var wParam: WPARAM; var lParam: LPARAM): TGpMQGetStatus;
 var
   flags  : TGpMQMessageFlags;
-  msgData: string;
+  msgData: AnsiString;
 begin
   {$IFDEF LogGpMessageQueue}
   mqLogger.Log('mq[%s]:=> PeekMessage; %d/%d/%d/%d', [mqName, timeout, msg, wParam, lParam]);
@@ -2112,8 +2194,8 @@ begin
   {$ENDIF LogGpMessageQueue}
 end; { TGpMessageQueueReader.PeekMessage }
 
-function TGpMessageQueueReader.PeekMessage(timeout: DWORD;
-  var msgData: string): TGpMQGetStatus;
+function TGpMessageQueueReader.PeekMessage(timeout: DWORD; var msgData: AnsiString):
+  TGpMQGetStatus;
 var
   flags : TGpMQMessageFlags;
   lParam: Windows.LPARAM;
@@ -2133,9 +2215,9 @@ begin
   {$ENDIF LogGpMessageQueue}
 end; { TGpMessageQueueReader.PeekMessage }
 
-function TGpMessageQueueReader.PeekMessage(timeout: DWORD;
-  var flags: TGpMQMessageFlags; var msg: UINT; var wParam: WPARAM;
-  var lParam: LPARAM; var msgData: string): TGpMQGetStatus;
+function TGpMessageQueueReader.PeekMessage(timeout: DWORD; var flags: TGpMQMessageFlags;
+  var msg: UINT; var wParam: WPARAM; var lParam: LPARAM; var msgData: AnsiString):
+  TGpMQGetStatus;
 begin
   {$IFDEF LogGpMessageQueue}
   mqLogger.Log('mq[%s]:=> PeekMessage; %d/%d/%d/%d/%d/%s', [mqName, timeout, byte(flags), msg, wParam, lParam, msgData]);
@@ -2154,8 +2236,8 @@ begin
   {$ENDIF LogGpMessageQueue}
 end; { TGpMessageQueueReader.PeekMessage }
 
-function TGpMessageQueueReader.PeekMessage(timeout: DWORD; var msg: UINT;
-  var msgData: string): TGpMQGetStatus;
+function TGpMessageQueueReader.PeekMessage(timeout: DWORD; var msg: UINT; var msgData:
+  AnsiString): TGpMQGetStatus;
 var
   flags : TGpMQMessageFlags;
   lParam: Windows.LPARAM;
@@ -2187,8 +2269,8 @@ end; { TGpMessageQueueWriter.Cleanup }
 {:Create message queue writer.
   @since   2002-10-23
 }        
-constructor TGpMessageQueueWriter.Create(messageQueueName: string; messageQueueSize:
-  cardinal; queueMessageCount: PCardinal);
+constructor TGpMessageQueueWriter.Create(messageQueueName: AnsiString; messageQueueSize:
+  cardinal; queueMessageCount: PCardinal = nil);
 begin
   inherited;
   {$IFDEF LogGpMessageQueue}
@@ -2214,7 +2296,7 @@ begin
   {$ENDIF LogGpMessageQueue}
   WaitForSingleobject(InitializationMtx, INFINITE); // prevent race condition with Writer's IsReaderAlive
   try
-    mtxSingleReader := CreateMutex_AllowEveryone(false, ReaderMutexName);
+    mtxSingleReader := CreateMutex_AllowEveryone(false, string(ReaderMutexName));
     try
       Result := (mtxSingleReader <> 0) and (GetLastError = ERROR_ALREADY_EXISTS);
     finally CloseHandle(mtxSingleReader); end;
@@ -2232,15 +2314,15 @@ begin
   Result := inherited Add(gpMessageQueue);
 end; { TGpMessageQueueList.Add }
 
-function TGpMessageQueueList.AddNewReader(messageQueueName: string;
-  messageQueueSize: cardinal): TGpMessageQueue;
+function TGpMessageQueueList.AddNewReader(messageQueueName: AnsiString; messageQueueSize:
+  cardinal): TGpMessageQueue;
 begin
   Result := TGpMessageQueueReader.Create(messageQueueName, messageQueueSize);
   Add(Result);
 end; { TGpMessageQueueList.AddNewReader }
 
-function TGpMessageQueueList.AddNewWriter(messageQueueName: string;
-  messageQueueSize: cardinal): TGpMessageQueue;
+function TGpMessageQueueList.AddNewWriter(messageQueueName: AnsiString; messageQueueSize:
+  cardinal): TGpMessageQueue;
 begin
   Result := TGpMessageQueueWriter.Create(messageQueueName, messageQueueSize);
   Add(Result);

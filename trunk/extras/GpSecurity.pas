@@ -1,12 +1,10 @@
-(*:Windows NT security wrapper. Requires Win32 headers from www.delphi-jedi.org.
-   Will work on 9x platform if DYNAMIC_LINK is defined in WINDEFINES.INC (part
-   of the Win32 headers from delphi-jedi).
+(*:Windows NT security wrapper.
    @author Primoz Gabrijelcic
    @desc <pre>
 
 This software is distributed under the BSD license.
 
-Copyright (c) 2003, Primoz Gabrijelcic
+Copyright (c) 2011, Primoz Gabrijelcic
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -32,12 +30,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
    Author            : Primoz Gabrijelcic
    Creation date     : 2002-10-14
-   Last modification : 2002-10-16
-   Version           : 1.0
-   Requires          : Project JEDI Win32 API conversion,
-                       http://www.delphi-jedi.org
+   Last modification : 2011-02-16
+   Version           : 2.02
 </pre>*)(*
    History:
+     2.02: 2011-02-16
+       - Implemented function GetCurrentSIDName.
+     2.01: 2010-06-10
+       - Use JWA in all Delphis as parts of JWA cannot be copied due to licensing issues.
+     2.0: 2009-02-17
+       - Relevant parts of the JWA library copied into this unit. Used only when compiling
+         for Delphi 2009 and newer.
      1.0: 2002-10-16
        - Released.
 *)
@@ -47,7 +50,10 @@ unit GpSecurity;
 interface
 
 uses
-  JwaAclApi, JwaAccCtrl, JwaWinNT, JwaWinBase, JwaWinType;
+  Windows, JwaAclApi, JwaAccCtrl, JwaWinNT, JwaWinBase, JwaWinType;
+
+type
+  PSecurityAttributes = LPSECURITY_ATTRIBUTES;
 
 type
   TGpSecurityAttributes = class
@@ -57,13 +63,13 @@ type
     gsaSecDescr: TSecurityDescriptor;
     gsaSid     : PSID;
   protected
-    function GetSA: LPSECURITY_ATTRIBUTES;
+    function GetSA: PSecurityAttributes;
   public
     constructor AllowAccount(const accountName: string);
     constructor AllowEveryone;
     constructor AllowSID(sid: PSID);
     destructor  Destroy; override;
-    property SecurityAttributes: LPSECURITY_ATTRIBUTES read GetSA;
+    property SecurityAttributes: PSecurityAttributes read GetSA;
   end; { TGpSecurityAttributes }
 
 function CreateEvent_AllowAccount(const accountName: string;
@@ -85,10 +91,14 @@ function CreateSemaphore_AllowAccount(const accountName: string;
 function CreateSemaphore_AllowEveryone(initialCount, maximumCount: longint;
   const semaphoreName: string): THandle;
 
+function GetCurrentSIDName: string;
+
 implementation
 
 uses
-  SysUtils;
+  SysUtils,
+  JclSecurity,
+  JwaSddl;
 
 function CreateEvent_AllowAccount(const accountName: string;
   manualReset, initialState: boolean; const eventName: string): THandle;
@@ -180,7 +190,27 @@ begin
   try
     Result := CreateSemaphore(gsa.SecurityAttributes, initialCount, maximumCount, PChar(semaphoreName));
   finally FreeAndNil(gsa); end;
-end; { TGpSecurityAttributes.CreateSemaphore_AllowEveryone }
+end; { CreateSemaphore_AllowEveryone }
+
+function GetCurrentSIDName: string;
+var
+  hAccessToken: THandle;
+  hProcess    : THandle;
+  infoBuffer  : pointer;
+  SIDName     : PChar;
+begin
+  Result := '';
+  hProcess := GetCurrentProcess;
+  if OpenProcessToken(hProcess, TOKEN_READ, hAccessToken) then try
+    QueryTokenInformation(hAccessToken, Windows.TokenUser, infoBuffer);
+    if assigned(infoBuffer) then try
+      if ConvertSidToStringSid(PSIDAndAttributes(infoBuffer)^.sid, SIDName) then begin
+        Result := SIDName;
+        LocalFree(cardinal(SIDName));
+      end;
+    finally FreeMem(infoBuffer); end
+  finally CloseHandle(hAccessToken); end;
+end; { GetCurrentSIDName }
 
 { TGpSecurityAttributes }
 
@@ -260,7 +290,7 @@ begin
   inherited;
 end; { TGpSecurityAttributes.Destroy }
 
-function TGpSecurityAttributes.GetSA: LPSECURITY_ATTRIBUTES;
+function TGpSecurityAttributes.GetSA: PSecurityAttributes;
 begin
   if Win32Platform = VER_PLATFORM_WIN32_NT then
     Result := @gsaSecAttr
