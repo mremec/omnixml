@@ -1504,6 +1504,7 @@ begin
   while iValue <= System.Length(Value) do
   begin
     case Ord(Value[iValue]) of
+      0..31: Store('&#' + IntToStr(Ord(Value[iValue])) + ';');
       34: Store('&quot;');
       38: Store('&amp;');
       39: Store('&apos;');
