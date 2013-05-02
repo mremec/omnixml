@@ -57,7 +57,7 @@ const
   NOTATION_NODE = NODE_NOTATION;
 
 function CreateXMLDoc: IXMLDocument;
-  
+
 implementation
 
 function CreateXMLDoc: IXMLDocument;
@@ -66,4 +66,3 @@ begin
 end;
 
 end.
-
