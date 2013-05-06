@@ -3364,6 +3364,8 @@ begin
         end
         else
         begin
+          InputStream.WriteOutputChar(']');  // 2013-05-06 (gp): fixed bug
+          InputStream.WriteOutputChar(']');  // 2013-05-06 (gp): fixed bug
           InputStream.WriteOutputChar(ReadChar);
           if ReadChar = ']' then
             PState := psEnd
