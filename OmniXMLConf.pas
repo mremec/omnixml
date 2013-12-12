@@ -40,11 +40,18 @@
 *       - initial version                                                      *
 *                                                                              *
 * Contributor(s):                                                              *
+* op: Ondrej Pokorny                                                           *
 *******************************************************************************)
 
 unit OmniXMLConf;
 
 interface
+
+{$I OmniXML.inc}
+
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
 
 uses SysUtils, Classes, OmniXML, OmniXMLUtils, Controls, Forms
   {$IFDEF TNT_UNICODE}, TntSysUtils, TntClasses{$ENDIF};
@@ -89,7 +96,7 @@ type TxmlConf=class
 
     procedure WriteControlSettings(Control: TControl; ctlName: WideString = '');
     procedure SaveConfig;
-  published
+  public
     property DocReadOnly: Boolean read FReadOnly write FReadOnly;
     property SaveAfterChange: Boolean read FSaveAfterChange write FSaveAfterChange;
 end;
@@ -302,7 +309,10 @@ begin
   if FFileStream = nil then Exit;
 
   if dirty or shutdown then
+  begin
+    FFileStream.Size := 0;//op: clear file stream before saving!!!
     FxmlDoc.SaveToStream(FFileStream, ofIndent);
+  end;
 end;
 
 procedure TxmlConf.WriteBool(Section, Ident: WideString; Value: Boolean);

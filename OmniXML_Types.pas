@@ -16,20 +16,22 @@ unit OmniXML_Types;
 
 interface
 
+uses OWideSupp;
+
 {$I OmniXML.inc}
 
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
+
 type
-  {$IFDEF OmniXML_Unicode}
-  XmlString = string;
-  PXmlString = ^string;
-  XmlChar = Char;
-  PXmlChar = PChar;
-  {$ELSE}
-  XmlString = WideString;
-  PXmlString = PWideString;
-  XmlChar = WideChar;
-  PXmlChar = PWideChar;
-  {$ENDIF}  // OmniXML_Unicode
+  XmlString = OWideString;
+  PXmlString = ^OWideString;
+  XmlChar = OWideChar;
+  PXmlChar = POWideChar;
+  {$IFDEF FPC}
+  RawByteString = AnsiString;
+  {$ENDIF}
 
 implementation
 

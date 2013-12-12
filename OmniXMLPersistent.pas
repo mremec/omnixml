@@ -21,6 +21,10 @@ interface
 
 {$I OmniXML.inc}
 
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
+
 // if you want to use MS XML parser, uncomment (in your program!!!)
 // the following compiler directive {.$DEFINE USE_MSXML}
 
@@ -29,7 +33,7 @@ uses
 {$IFDEF VCL} Controls, {$ENDIF}
   TypInfo,
 {$IFDEF HAS_UNIT_VARIANTS} Variants, {$ENDIF}
-  OmniXML, OmniXML_Types,
+  OEncoding, OmniXML, OmniXML_Types,
 {$IFDEF USE_MSXML} OmniXML_MSXML, {$ENDIF}
   OmniXMLUtils;
 
@@ -351,7 +355,7 @@ var
 
 begin
   if (PPropInfo(PropInfo)^.GetProc <> nil) then begin
-    PropType := PPropInfo(PropInfo)^.PropType^;
+    PropType := {$IFDEF FPC}@{$ENDIF}PPropInfo(PropInfo).PropType{$IFNDEF FPC}^{$ENDIF};
     case PropType^.Kind of
       tkInteger, tkChar, tkWChar, tkEnumeration, tkSet: WriteOrdProp;
       tkString, tkLString, tkWString {$IFDEF UNICODE}, tkUString {$ENDIF}: WriteStrProp;
@@ -601,7 +605,7 @@ var
 
           case CP of
             CP_ACP: SetAnsiStrProp(Instance, PropInfo, AnsiString(Value));  // default code page
-            CP_UTF16: SetUnicodeStrProp(Instance, PropInfo, Value);  // Unicode code page
+            CP_UNICODE: SetUnicodeStrProp(Instance, PropInfo, Value);  // Unicode code page
           else
             // convert to valid codepage using RawByteString
             RBS := UTF8Encode(Value);

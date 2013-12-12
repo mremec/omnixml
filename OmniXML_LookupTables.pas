@@ -18,6 +18,12 @@ unit OmniXML_LookupTables;
 
 interface
 
+{$I OmniXML.inc}
+
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
+
 var
   XMLCharLookupTable: array of Byte;
 
