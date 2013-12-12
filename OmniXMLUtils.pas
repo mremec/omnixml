@@ -152,8 +152,10 @@ uses
 {$ENDIF}
   SysUtils,
   Classes,
+{$IFNDEF NoVCL}
   Graphics,
-  OmniXML_Types, 
+{$ENDIF}
+  OmniXML_Types,
   OmniXML
 {$IFDEF USE_MSXML}
   ,OmniXML_MSXML
@@ -233,7 +235,9 @@ type
   function GetNodeTextDate(parentNode: IXMLNode; nodeTag: string; defaultValue: TDateTime): TDateTime; overload;
   function GetNodeTextTime(parentNode: IXMLNode; nodeTag: string; defaultValue: TDateTime): TDateTime; overload;
   function GetNodeTextBinary(parentNode: IXMLNode; nodeTag: string; value: TStream): boolean;
+{$IFNDEF NoVCL}
   function GetNodeTextFont(parentNode: IXMLNode; nodeTag: string; value: TFont): boolean;
+{$ENDIF}
 
   {:A family of functions that will return node text reformatted into another
     type or raise exception if node doesn't exist or if node text is not in a
@@ -360,8 +364,10 @@ type
     value: TDateTime): IXMLNode;
   function SetNodeTextBinary(parentNode: IXMLNode; nodeTag: string;
     const value: TStream): IXMLNode;
+{$IFNDEF NoVCL}
   function SetNodeTextFont(parentNode: IXMLNode; nodeTag: string;
     value: TFont): IXMLNode;
+{$ENDIF}
 
   {:Set the value of the text child and return its interface.
   }
@@ -1661,6 +1667,7 @@ begin
   finally FreeAndNil(decoded); end;
 end; { GetNodeTextBinary }
 
+{$IFNDEF NoVCL}
 function GetNodeTextFont(parentNode: IXMLNode; nodeTag: string; value: TFont): boolean;
 var
   fontNode: IXMLNode;
@@ -1685,6 +1692,7 @@ begin
     Result := true;
   end;
 end; { GetNodeTextFont }
+{$ENDIF}
 
 function GetNodeAttr(parentNode: IXMLNode; attrName: string;
   var value: XmlString): boolean;
@@ -2020,6 +2028,7 @@ begin
   Result := SetNodeText(parentNode,nodeTag,XMLBinaryToStr(value));
 end; { SetNodeTextBinary }
 
+{$IFNDEF NoVCL}
 function SetNodeTextFont(parentNode: IXMLNode; nodeTag: string;
   value: TFont): IXMLNode;
 var
@@ -2039,6 +2048,7 @@ begin
   Move(fStyle, iStyle, SizeOf(TFontStyles));
   SetNodeAttrInt(fontNode, 'Style', iStyle);
 end; { SetNodeTextFont }
+{$ENDIF}
 
 procedure SetNodeAttr(parentNode: IXMLNode; attrName: string;
   value: XmlString);
