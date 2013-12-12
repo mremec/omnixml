@@ -404,6 +404,7 @@ type
     value: TDateTime);
   procedure SetNodeAttrTime(parentNode: IXMLNode; attrName: string;
     value: TDateTime);
+  procedure SetNodeAttrs(parentNode: IXMLNode; attrNamesValues: array of string);
 
   {:A family of functions used to convert value to string according to the
     conversion rules used in this unit. Used in Set* functions above.
@@ -2107,6 +2108,37 @@ procedure SetNodeAttrTime(parentNode: IXMLNode; attrName: string;
 begin
   SetNodeAttr(parentNode,attrName,XMLTimeToStr(value));
 end; { SetNodeAttrTime }
+
+procedure SetNodeAttrs(parentNode: IXMLNode; attrNamesValues: array of string);
+var
+  nameValue: string;
+  name: string;
+  value: string;
+  valuePos: Integer;
+begin
+  for nameValue in attrNamesValues do
+  begin
+    valuePos := Pos('=', nameValue);
+    if valuePos > 0 then
+    begin
+      name := Copy(nameValue, 1, valuePos-1);
+      value := Copy(nameValue, valuePos+1, Length(nameValue));
+      if Length(value) > 0 then
+      begin
+        if value[1] = '"' then
+          Delete(value, 1, 1);
+        if value[Length(value)] = '"' then
+          SetLength(value, Length(value)-1);
+      end;
+    end
+    else
+    begin
+      name := nameValue;
+      value := '';
+    end;
+    SetNodeAttr(parentNode, name, value);
+  end;
+end; { SetNodeAttrs }
 
 {$IFNDEF USE_MSXML}
 function InternalFilterNodes(parentNode: IXMLNode; matchesName,
