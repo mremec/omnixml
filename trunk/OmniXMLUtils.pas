@@ -7,10 +7,14 @@
 
    Author            : Primoz Gabrijelcic
    Creation date     : 2001-10-25
-   Last modification : 2011-03-01
-   Version           : 1.30
+   Last modification : 2013-12-12
+   Version           : 1.31
 </pre>*)(*
    History:
+     1.31: 2013-12-13
+       - Can be compiled without VCL (/dNOVCL). Font persistency would then
+         be disabled.
+       - Added procedure SetNodeAttrs.
      1.30: 2011-03-01
        - Convert EFOpenError exception in XMLLoadFromFile to function result.
      1.29: 2011-02-07
