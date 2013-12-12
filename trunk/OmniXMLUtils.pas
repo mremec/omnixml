@@ -138,6 +138,9 @@ interface
 
 {$I OmniXML.inc}
 
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
 {$IFDEF CONDITIONALEXPRESSIONS}
   {$IF (CompilerVersion >= 17)} //Delphi 2005 or newer
     {$DEFINE OmniXmlUtils_Enumerators}
@@ -2119,9 +2122,11 @@ var
   name: string;
   value: string;
   valuePos: Integer;
+  I: Integer;
 begin
-  for nameValue in attrNamesValues do
+  for I := Low(attrNamesValues) to High(attrNamesValues) do
   begin
+    nameValue := attrNamesValues[I];
     valuePos := Pos('=', nameValue);
     if valuePos > 0 then
     begin

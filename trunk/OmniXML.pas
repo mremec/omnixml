@@ -15,6 +15,7 @@
 * Contributor(s):                                                              *
 *   Primoz Gabrijelcic (gp)                                                    *
 *   Erik Berry (eb)                                                            *
+*   Ondrej Pokorny (op)                                                        *
 *******************************************************************************)
 unit OmniXML;
 
@@ -22,31 +23,14 @@ interface
 
 {$I OmniXML.inc}
 
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
+
 uses
-  Classes, SysUtils
-  {$IFDEF MSWINDOWS}, GpTextStream {$ENDIF}
-  , OmniXML_Types, OmniXML_Dictionary
+  Classes, SysUtils, OEncoding, OTextReadWrite, OmniXML_Types, OmniXML_Dictionary
+  {$IFDEF OmniXML_Generics}, Generics.Collections{$ENDIF}
   ;
-
-const
-  {$IFDEF LINUX}
-  // copied from GpTextStream.pas
-  CP_UNICODE =  1200; // Unicode pseudo-codepage,
-  ISO_8859_1 = 28591; // Western Alphabet (ISO)
-  ISO_8859_2 = 28592; // Central European Alphabet (ISO)
-  ISO_8859_3 = 28593; // Latin 3 Alphabet (ISO)
-  ISO_8859_4 = 28594; // Baltic Alphabet (ISO)
-  ISO_8859_5 = 28595; // Cyrillic Alphabet (ISO)
-  ISO_8859_6 = 28596; // Arabic Alphabet (ISO)
-  ISO_8859_7 = 28597; // Greek Alphabet (ISO)
-  ISO_8859_8 = 28598; // Hebrew Alphabet (ISO)
-  ISO_8859_9 = 28599; // Turkish Alphabet (ISO)
-  {$ENDIF}
-  CP_UTF16 = CP_UNICODE;
-  CP_UTF8 = 65001;  // UTF-8 translation
-
-const
-  HEADER_UTF16: WideChar = WideChar($FEFF);  // don't change!
 
 const
   DEFAULT_DECIMALSEPARATOR  = '.';        // don't change!
@@ -283,8 +267,9 @@ type
   IUnicodeStream = interface
     ['{F3ECA11F-EA18-491C-B59A-4203D5DC8CCA}']
     // private
-    function GetCodePage: Word;
-    procedure SetCodePage(const CodePage: Word);
+    function GetEncoding: TEncoding;
+    procedure SetEncoding(const AEncoding: TEncoding);
+    function GetBOMFound: Boolean;
     function GetOutputFormat: TOutputFormat;
     procedure SetOutputFormat(const Value: TOutputFormat);
     // public
@@ -292,7 +277,8 @@ type
     procedure DecreaseIndent;
     procedure WriteIndent(const ForceNextLine: Boolean = False);
     property OutputFormat: TOutputFormat read GetOutputFormat write SetOutputFormat;
-    property CodePage: Word read GetCodePage write SetCodePage;
+    property Encoding: TEncoding read GetEncoding write SetEncoding;
+    property BOMFound: Boolean read GetBOMFound;
     procedure UndoRead;
     function ProcessChar(var Char: XmlChar): Boolean;
     function GetNextString(var ReadString: XmlString; const Len: Integer): Boolean;
@@ -300,51 +286,30 @@ type
     function GetOutputBuffer: XmlString;
     function OutputBufferLen: Integer;
     procedure ClearOutputBuffer;
-    procedure WriteString(Value: XmlString);
+    procedure WriteString(const Value: XmlString);
   end;
 
 type
   TStreamMode = (smRead, smWrite);
 
-  {$IFDEF LINUX}
-  TUnicodeStream = class(TMemoryStream)
-  private
-    FOutputStream: TStream;
-  public
-    constructor Create(const OutputStream: TStream);
-    procedure WriteString(const Value: XmlString);
-    function Write(const Buffer; Count: Longint): Longint; override;
-  end;
-  {$ENDIF}
-
   TXMLTextStream = class(TInterfacedObject, IUnicodeStream)
   private
     FStreamMode: TStreamMode;
-    {$IFDEF MSWINDOWS}
-    FMode: TGpTSAccess;
-    FSize: Integer;
-    FXTS: TGpTextStream;
-    {$ENDIF}
-    {$IFDEF LINUX}
-    FXTS: TUnicodeStream;
-    {$ENDIF}
+    FReader: TOTextReader;
+    FWriter: TOTextWriter;
     FPreviousOutBuffer: XmlString;
     FOutBuffer: PXmlChar;
     FOutBufferPos,
     FOutBufferSize: Integer;
-    // undo support
-    FPreviousChar: XmlChar;
-    FReadFromUndo: Boolean;
-    FCanUndo: Boolean;
     FIndent: Integer;
     FOutputFormat: TOutputFormat;
     FLinePos,
     FLine: Integer;
     FLineStartPosition: Integer;
-    function GetPreviousChar: XmlChar;
-    property PreviousChar: XmlChar read GetPreviousChar;
-    function GetCodePage: Word;
-    procedure SetCodePage(const CodePage: Word);
+    fBOMFound: Boolean;
+    function GetEncoding: TEncoding;
+    procedure SetEncoding(const AEncoding: TEncoding);
+    function GetBOMFound: Boolean;
     function GetOutputFormat: TOutputFormat;
     procedure SetOutputFormat(const Value: TOutputFormat);
   protected
@@ -358,11 +323,11 @@ type
     // helper functions
     function GetPosition: Integer;
     function GetPreviousOutputBuffer: XmlString;
-    function GetLastLine: XmlString;
   public
     property OutputFormat: TOutputFormat read GetOutputFormat write SetOutputFormat;
-    property CodePage: Word read GetCodePage write SetCodePage;
-    constructor Create(const Stream: TStream; const Mode: TStreamMode; const Encoding: Word = CP_UTF16);
+    property Encoding: TEncoding read GetEncoding write SetEncoding;
+    property BOMFound: Boolean read GetBOMFound;
+    constructor Create(const Stream: TStream; const Mode: TStreamMode; const Encoding: TEncoding; const WriteBOM: Boolean);
     destructor Destroy; override;
     procedure UndoRead; virtual;
     function GetNextString(var ReadString: XmlString; const Len: Integer): Boolean;
@@ -370,7 +335,7 @@ type
     function GetOutputBuffer: XmlString;
     function OutputBufferLen: Integer;
     procedure ClearOutputBuffer;
-    procedure WriteString(Value: XmlString);
+    procedure WriteString(const Value: XmlString);
   end;
 
   IXMLParseError = interface
@@ -751,7 +716,11 @@ type
 
   TXMLCustomList = class(TInterfacedObject, IXMLCustomList)
   private
-    FList: TInterfaceList;
+    {$IFDEF OmniXML_Generics}
+    FList: TList<IXMLNode>;
+    {$ELSE}
+    FList: TList;
+    {$ENDIF}
   protected
     function GetLength: Integer;
     function GetItem(const Index: Integer): IXMLNode;
@@ -982,40 +951,6 @@ type
     function LoadXML(const XML: XmlString): Boolean; virtual;
     property ParseError: IXMLParseError read GetParseError;
   end;
-
-type
-  TCodePage = record
-    CodePage: Word;
-    Alias: string;
-  end;
-  TCodePages = array[1..23] of TCodePage;
-
-const
-  CodePages: TCodePages = (
-    (CodePage:   932; Alias: 'shift-jis'),  // Japanese (Shift-JIS)
-    (CodePage: CP_UTF16; Alias: 'utf-16'),  // Central European Alphabet (Windows)
-    (CodePage:  1250; Alias: 'windows-1250'),  // Central European Alphabet (Windows)
-    (CodePage:  1251; Alias: 'windows-1251'),  // Cyrillic Alphabet (Windows)
-    (CodePage:  1252; Alias: 'windows-1252'),  // Western Alphabet
-    (CodePage:  1253; Alias: 'windows-1253'),  // Greek Alphabet (Windows)
-    (CodePage:  1254; Alias: 'windows-1254'),  // Turkish Alphabet
-    (CodePage:  1255; Alias: 'windows-1255'),  // Hebrew Alphabet (Windows)
-    (CodePage:  1256; Alias: 'windows-1256'),  // Arabic Alphabet (Windows)
-    (CodePage:  1257; Alias: 'windows-1257'),  // Baltic Alphabet (Windows)
-    (CodePage:  1258; Alias: 'windows-1258'),  // Vietnamese Alphabet (Windows)
-    (CodePage: ISO_8859_1; Alias: 'iso-8859-1'),  // Western Alphabet (ISO)
-    (CodePage: ISO_8859_2; Alias: 'iso-8859-2'),  // Central European Alphabet (ISO)
-    (CodePage: ISO_8859_3; Alias: 'iso-8859-3'),  // Latin 3 Alphabet (ISO)
-    (CodePage: ISO_8859_4; Alias: 'iso-8859-4'),  // Baltic Alphabet (ISO)
-    (CodePage: ISO_8859_5; Alias: 'iso-8859-5'),  // Cyrillic Alphabet (ISO)
-    (CodePage: ISO_8859_6; Alias: 'iso-8859-6'),  // Arabic Alphabet (ISO)
-    (CodePage: ISO_8859_7; Alias: 'iso-8859-7'),  // Greek Alphabet (ISO)
-    (CodePage: ISO_8859_8; Alias: 'iso-8859-8'),  // Hebrew Alphabet (ISO)
-    (CodePage: ISO_8859_9; Alias: 'iso-8859-9'),  // Turkish Alphabet (ISO)
-    (CodePage: 50220; Alias: 'iso-2022-jp'),  // Japanese (JIS)
-    (CodePage: 51932; Alias: 'euc-jp'),  // Japanese (EUC)
-    (CodePage: CP_UTF8; Alias: 'utf-8')  // Universal Alphabet (UTF-8)
-  );
 
 // helper functions
 function CreateXMLDoc: IXMLDocument;
@@ -1335,23 +1270,7 @@ begin
   Result := TXMLDocument.Create;
 end;
 
-function GetCodePage(const Alias: string; var CodePage: Word): Boolean;
-var
-  i: Integer;
-begin
-  Result := False;
-  i := Low(TCodePages);
-  while (not Result) and (i <= High(TCodePages)) do
-  begin
-    Result := CompareText(Alias, CodePages[i].Alias) = 0;
-    if Result then
-      CodePage := CodePages[i].CodePage
-    else
-      Inc(i);
-  end;
-end;
-
-function FindEncoding(const PI: IXMLProcessingInstruction; var CodePage: Word): Boolean;
+function FindEncoding(const PI: IXMLProcessingInstruction; var OutEncoding: TEncoding): Boolean;
 var
   EncodingStartPos,
   EncodingEndPos: Integer;
@@ -1359,6 +1278,7 @@ var
   Encoding: XmlString;
   DelimiterChar: XmlChar;
 begin
+  OutEncoding := nil;
   Result := False;
   if CompareText(PI.Target, 'xml') = 0 then
   begin
@@ -1377,7 +1297,7 @@ begin
         if EncodingEndPos > 0 then
         begin
           Encoding := Copy(PI.Data, EncodingStartPos, EncodingEndPos - EncodingStartPos - 1);
-          Result := GetCodePage(Encoding, CodePage);
+          Result := GetCreateCodePage(Encoding, OutEncoding);
         end;
       end;
     end;
@@ -1504,7 +1424,6 @@ begin
   while iValue <= System.Length(Value) do
   begin
     case Ord(Value[iValue]) of
-      0..31: Store('&#' + IntToStr(Ord(Value[iValue])) + ';');
       34: Store('&quot;');
       38: Store('&amp;');
       39: Store('&apos;');
@@ -1794,80 +1713,39 @@ begin
   FXMLCode := XMLCode;
 end;
 
-{$IFDEF LINUX}
-
-{ TUnicodeStream }
-
-constructor TUnicodeStream.Create(const OutputStream: TStream);
-begin
-  FOutputStream := OutputStream;
-end;
-
-function TUnicodeStream.Write(const Buffer; Count: Integer): Longint;
-begin
-  if FOutputStream <> nil then
-    Result := FOutputStream.Write(Buffer, Count)
-  else
-    Result := inherited Write(Buffer, Count);
-end;
-
-procedure TUnicodeStream.WriteString(const Value: XmlString);
-begin
-  if Value <> '' then
-    WriteBuffer(Value[1], Length(Value) * 2);
-end;
-
-{$ENDIF}
-
 { TXMLTextStream }
 
-constructor TXMLTextStream.Create(const Stream: TStream; const Mode: TStreamMode; const Encoding: Word);
-{$IFDEF MSWINDOWS}
-const
-  Modes: array[TStreamMode] of TGpTSAccess = (tsaccRead, tsaccWrite);
-{$ENDIF}
+constructor TXMLTextStream.Create(const Stream: TStream; const Mode: TStreamMode;
+  const Encoding: TEncoding; const WriteBOM: Boolean);
 begin
   FStreamMode := Mode;
-  {$IFDEF MSWINDOWS}
-  FXTS := TGpTextStream.Create(Stream, Modes[FStreamMode], [], Encoding);
-  {$ENDIF}
-  {$IFDEF LINUX}
   if FStreamMode = smRead then
   begin
-    FXTS := TUnicodeStream.Create(nil);
-    FXTS.CopyFrom(Stream, 0);
-    FXTS.Seek(0, soFromBeginning);
+    FReader := TOTextReader.Create(Stream, fBOMFound, Encoding);
+    FLineStartPosition := FReader.ApproxStreamPosition;
   end
   else
   begin
-    FXTS := TUnicodeStream.Create(Stream);
-    { TODO -omr : writing HEADER_UTF16 should be deleted when Primoz add true codepage support }
-    FXTS.Write(HEADER_UTF16, SizeOf(HEADER_UTF16));
+    FWriter := TOTextWriter.Create(Stream, Encoding, WriteBOM);
+    FLineStartPosition := 0;
   end;
-  {$ENDIF}
 
   // set defaults
   FIndent := -1;
-  FLineStartPosition := FXTS.Position;
 
   // allocate initial output buffer
   FOutBufferSize := MAX_OUTPUTBUFFERSIZE;
   FOutBufferPos := -1;
   GetMem(FOutBuffer, FOutBufferSize * SizeOf(XmlChar));
-
-  {$IFDEF MSWINDOWS}
-  // store Mode and prefetch Size
-  FMode := Modes[FStreamMode];
-  if FMode = tsaccRead then
-    FSize := FXTS.Size;
-  {$ENDIF}
 end;
 
 destructor TXMLTextStream.Destroy;
 begin
   FreeMem(FOutBuffer, FOutBufferSize * SizeOf(XmlChar));
-//  if FStreamMode = smRead then
-    FreeAndNil(FXTS);
+
+  FreeAndNil(FReader);
+  FreeAndNil(FWriter);
+
   inherited;
 end;
 
@@ -1886,21 +1764,25 @@ begin
   FOutputFormat := Value;
 end;
 
-function TXMLTextStream.GetCodePage: Word;
+function TXMLTextStream.GetBOMFound: Boolean;
 begin
-  {$IFDEF MSWINDOWS}
-  Result := FXTS.Codepage;
-  {$ENDIF}
-  {$IFDEF LINUX}
-  Result := CP_UNICODE;
-  {$ENDIF}
+  Result := fBOMFound;
 end;
 
-procedure TXMLTextStream.SetCodePage(const CodePage: Word);
+function TXMLTextStream.GetEncoding: TEncoding;
 begin
-  {$IFDEF MSWINDOWS}
-  FXTS.Codepage := CodePage;
-  {$ENDIF}
+  if FStreamMode = smRead then
+    Result := FReader.Encoding
+  else
+    Result := FWriter.Encoding;
+end;
+
+procedure TXMLTextStream.SetEncoding(const AEncoding: TEncoding);
+begin
+  if FStreamMode = smRead then
+    FReader.Encoding := AEncoding
+  else
+    FWriter.Encoding := AEncoding
 end;
 
 function TXMLTextStream.GetNextString(var ReadString: XmlString; const Len: Integer): Boolean;
@@ -1925,31 +1807,9 @@ begin
   ClearOutputBuffer;  // do not remove this call!
 end;
 
-function TXMLTextStream.GetPreviousChar: XmlChar;
-begin
-  if FCanUndo then
-    Result := FPreviousChar
-  else
-    raise EXMLException.CreateParseError(INVALID_CHARACTER_ERR, MSG_E_INTERNALERROR, ['Only one undo level is supported']);
-
-  FCanUndo := False;
-end;
-
 function TXMLTextStream.ReadChar(var ReadChar: XmlChar): Boolean;
 begin
-  if FReadFromUndo then
-  begin
-    ReadChar := PreviousChar;
-    FReadFromUndo := False;
-    Result := True;
-  end
-  else
-  begin
-    // we always expect WideChar (with length=2)
-    Result := FXTS.Read(ReadChar, 2) > 0;
-    FCanUndo := True;
-    FPreviousChar := ReadChar;
-  end;
+  Result := FReader.ReadNextChar(ReadChar);
 end;
 
 function TXMLTextStream.ProcessChar(var ch: XmlChar): Boolean;
@@ -1962,14 +1822,14 @@ begin
   begin
     Inc(FLine);
     FLinePos := 0;
-    FLineStartPosition := FXTS.Position;
+    FLineStartPosition := FReader.ApproxStreamPosition;
   end;
 end;
 
 procedure TXMLTextStream.UndoRead;
 begin
   // next char will be from the undo buffer
-  FReadFromUndo := True;
+  FReader.UndoRead;
 end;
 
 procedure TXMLTextStream.WriteOutputChar(const OutChar: XmlChar);
@@ -1986,9 +1846,9 @@ begin
   FOutBuffer[FOutBufferPos] := OutChar;
 end;
 
-procedure TXMLTextStream.WriteString(Value: XmlString);
+procedure TXMLTextStream.WriteString(const Value: XmlString);
 begin
-  FXTS.WriteString(Value);
+  FWriter.WriteString(Value);
 end;
 
 procedure TXMLTextStream.IncreaseIndent;
@@ -2012,10 +1872,10 @@ begin
 
   // 2002-12-17 (mr): added ForceNextLine
   if (FIndent > 0) or ForceNextLine then
-    FXTS.WriteString(#13#10);
+    FWriter.WriteString(#13#10);
 
   if (FOutputFormat = ofIndent) and (FIndent < MaxInt) and (FIndent > 0) then
-    FXTS.WriteString(StringOfChar(' ', FIndent * OUTPUT_INDENT));
+    FWriter.WriteString(StringOfChar(' ', FIndent * OUTPUT_INDENT));
 end;
 
 function TXMLTextStream.OutputBufferLen: Integer;
@@ -2025,30 +1885,12 @@ end;
 
 function TXMLTextStream.GetPosition: Integer;
 begin
-  if FReadFromUndo then
-    Result := FXTS.Position - 1
-  else
-    Result := FXTS.Position;
+  Result := FReader.ApproxStreamPosition;
 end;
 
 function TXMLTextStream.GetPreviousOutputBuffer: XmlString;
 begin
   Result := FPreviousOutBuffer;
-end;
-
-function TXMLTextStream.GetLastLine: XmlString;
-var
-  CurrentPos: Integer;
-begin
-  CurrentPos := FXTS.Position;
-  FXTS.Seek(FLineStartPosition, soFromBeginning);
-  if CurrentPos - FLineStartPosition > 0 then
-  begin
-    SetLength(Result, FLinePos);
-    FXTS.Read(Result[1], FLinePos * 2);
-  end
-  else
-    Result := '';
 end;
 
 { TXMLParseError }
@@ -2133,18 +1975,27 @@ end;
 
 constructor TXMLCustomList.Create;
 begin
-  FList := TInterfaceList.Create;
+  {$IFDEF OmniXML_Generics}
+  FList := TList<IXMLNode>.Create;
+  {$ELSE}
+  FList := TList.Create;
+  {$ENDIF}
 end;
 
 destructor TXMLCustomList.Destroy;
 begin
+  Clear;
   FList.Free;
   inherited;
 end;
 
 function TXMLCustomList.GetItem(const Index: Integer): IXMLNode;
 begin
-  Result := FList.Items[Index] as IXMLNode;
+  {$IFDEF OmniXML_Generics}
+  Result := FList.Items[Index];
+  {$ELSE}
+  Result := IInterface(FList.Items[Index]) as IXMLNode;
+  {$ENDIF}
 end;
 
 function TXMLCustomList.GetLength: Integer;
@@ -2154,38 +2005,78 @@ end;
 
 function TXMLCustomList.Add(const XMLNode: IXMLNode): Integer;
 begin
-  Result := FList.Add(XMLNode as IXMLNode);
+  {$IFDEF OmniXML_Generics}
+  Result := FList.Add(XMLNode);
+  {$ELSE}
+  Result := FList.Add(Pointer(XMLNode as IXMLNode));
+  XMLNode._AddRef;
+  {$ENDIF}
 end;
 
 function TXMLCustomList.Remove(const XMLNode: IXMLNode): Integer;
 begin
-  Result := FList.Remove(XMLNode as IXMLNode);
+  {$IFDEF OmniXML_Generics}
+  Result := FList.Remove(XMLNode);
+  {$ELSE}
+  Result := FList.Remove(Pointer(XMLNode as IXMLNode));
+  XMLNode._Release;
+  {$ENDIF}
 end;
 
 procedure TXMLCustomList.Put(Index: Integer; Item: IXMLNode);
 begin
-  FList[Index] := Item as IXMLNode;
+  {$IFDEF OmniXML_Generics}
+  FList[Index] := Item;
+  {$ELSE}
+  if Assigned(FList[Index]) then
+    IInterface(FList[Index])._Release;
+  FList[Index] := Pointer(Item as IXMLNode);
+  Item._AddRef;
+  {$ENDIF}
 end;
 
 function TXMLCustomList.IndexOf(const XMLNode: IXMLNode): Integer;
 begin
+  {$IFDEF OmniXML_Generics}
   Result := FList.IndexOf(XMLNode as IXMLNode);
+  {$ELSE}
+  Result := FList.IndexOf(Pointer(XMLNode as IXMLNode));
+  {$ENDIF}
 end;
 
 procedure TXMLCustomList.Insert(const Index: Integer; const XMLNode: IXMLNode);
 begin
+  {$IFDEF OmniXML_Generics}
   FList.Insert(Index, XMLNode as IXMLNode);
+  {$ELSE}
+  FList.Insert(Index, Pointer(XMLNode as IXMLNode));
+  XMLNode._AddRef;
+  {$ENDIF}
 end;
 
 procedure TXMLCustomList.Delete(const Index: Integer);
 begin
-  FList.Delete(Index);
+  if Index < FList.Count then begin
+    {$IFNDEF OmniXML_Generics}
+    (IInterface(FList[Index]) as IXMLNode)._Release;
+    {$ENDIF}
+    FList.Delete(Index);
+  end;
 end;
 
 procedure TXMLCustomList.Clear;
+{$IFNDEF OmniXML_Generics}
+var I: Integer;
+begin
+  for I := 0 to FList.Count-1 do
+    (IInterface(FList[I]) as IXMLNode)._Release;
+  FList.Clear;
+end;
+{$ELSE}
 begin
   FList.Clear;
 end;
+{$ENDIF}
 
 { TXMLNodeList }
 
@@ -2566,16 +2457,18 @@ var
   Stream: TMemoryStream;
   US: IUnicodeStream;
 begin
+  US := nil;
   Stream := TMemoryStream.Create;
   try
-    US := TXMLTextStream.Create(Stream, smWrite, CP_UTF16);
-    try
-      InternalWriteToStream(US);
-      SetLength(Result, (Stream.Size - SizeOf(XmlChar)) div 2);
-      Stream.Seek(SizeOf(XmlChar), soFromBeginning);
-      Stream.Read(PXmlChar(Result)^, Stream.Size - SizeOf(XmlChar));
-    finally
-      US := nil;
+    US := TXMLTextStream.Create(Stream, smWrite, TEncoding.OWideStringEncoding, False);
+
+    InternalWriteToStream(US);
+    US := nil;//(op) MUST BE HERE -> FLUSH BUFFER
+    SetLength(Result, Stream.Size div SizeOf(XmlChar));
+    if Stream.Size > 0 then
+    begin
+      Stream.Position := 0;
+      Stream.ReadBuffer(PXmlChar(Result)^, Stream.Size);
     end;
   finally
     Stream.Free;
@@ -2938,7 +2831,7 @@ type
 var
   ReadChar: XmlChar;
   PState: TParserState;
-  CodePage: Word;
+  Encoding: TEncoding;
   _xmlDoc: IXMLDocument;
 begin
   // [16] PI ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
@@ -2996,8 +2889,17 @@ begin
           if ReadChar = '>' then
           begin
             SetData(InputStream.GetOutputBuffer);
-            if FindEncoding(Self, CodePage) then
-              InputStream.CodePage := CodePage;
+            if not InputStream.BOMFound and FindEncoding(Self, Encoding) then//(op): DO NOT CHANGE ENCODING IF BOM WAS FOUND!!!
+            begin
+              if (InputStream.Encoding.EncodingCodePage <> Encoding.EncodingCodePage) then
+              begin
+                InputStream.Encoding := Encoding;
+                FOwnerDocument.ClearChildNodes;
+              end
+              else
+              if Assigned(Encoding) and not TEncoding.IsStandardEncoding(Encoding) then
+              Encoding.Free;
+            end;
             Exit;
           end
           else
@@ -3364,8 +3266,6 @@ begin
         end
         else
         begin
-          InputStream.WriteOutputChar(']');  // 2013-05-06 (gp): fixed bug
-          InputStream.WriteOutputChar(']');  // 2013-05-06 (gp): fixed bug
           InputStream.WriteOutputChar(ReadChar);
           if ReadChar = ']' then
             PState := psEnd
@@ -3773,10 +3673,12 @@ end;
 function TXMLDocument.LoadXML(const XML: XmlString): Boolean;
 var
   Stream: TMemoryStream;
+  BOM: TEncodingBuffer;
 begin
   Stream := TMemoryStream.Create;
   try
-    Stream.Write(HEADER_UTF16, SizeOf(HEADER_UTF16));
+    BOM := TEncoding.OWideStringEncoding.GetPreamble;
+    Stream.Write(BOM[TEncodingBuffer_FirstElement], Length(BOM));
     Stream.Write(PXmlChar(XML)^, Length(XML) * SizeOf(XmlChar));
     Stream.Seek(0, soFromBeginning);
     Result := LoadFromStream(Stream);
@@ -3818,7 +3720,7 @@ begin
   Result := True;
   ClearChildNodes;
 
-  XTS := TXMLTextStream.Create(Stream, smRead, CP_UTF8);
+  XTS := TXMLTextStream.Create(Stream, smRead, TEncoding.UTF8, False);
   try
     try
       UnclosedElementList.Clear;
@@ -3839,13 +3741,7 @@ begin
             SetLine(XTS.FLine + 1);
             SetLinePos(XTS.FLinePos);
             SetReason(E.Message);
-            SetSrcText(XTS.GetLastLine);
-            if SrcText = '' then
-              // try to get source text from previously completed buffer
-              SetSrcText(XTS.GetPreviousOutputBuffer);
-            if SrcText = '' then
-              // try to get source text from previously read character
-              SetSrcText(XTS.PreviousChar);
+            SetSrcText(XTS.FReader.ReadPreviousString(100));
             SetURL(Self.FURL);
           end;
           Result := False;
@@ -3883,13 +3779,13 @@ procedure TXMLDocument.SaveToStream(const OutputStream: TStream; const OutputFor
 var
   US: TXMLTextStream;
 
-  function InternalFindEncoding: Word;
+  function InternalFindEncoding: TEncoding;
   var
     i: Integer;
     TempPI, PI: IXMLProcessingInstruction;
-    CodePage: Word;
+    Encoding: TEncoding;
   begin
-    Result := CP_UTF8;
+    Result := TEncoding.UTF8;
     if HasChildNodes then
     begin
       // find last processing instruction
@@ -3899,11 +3795,11 @@ var
           PI := TempPI;
       end;
     end;
-    if (PI <> nil) and FindEncoding(PI, CodePage) then
-      Result := CodePage;
+    if (PI <> nil) and FindEncoding(PI, Encoding) then
+      Result := Encoding;
   end;
 begin
-  US := TXMLTextStream.Create(OutputStream, smWrite, InternalFindEncoding);
+  US := TXMLTextStream.Create(OutputStream, smWrite, InternalFindEncoding, True);
   try
     US.OutputFormat := OutputFormat;
     InternalWriteToStream(US);

@@ -36,6 +36,12 @@ unit OmniXMLXPath;
 
 interface
 
+{$I OmniXML.inc}
+
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
+
 uses
   SysUtils,
   OmniXML_Types,
