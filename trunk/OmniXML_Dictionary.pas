@@ -27,8 +27,12 @@ interface
 {$ENDIF}
 
 uses
+  {$IFDEF OmniXML_Namespaces}
+  System.Classes, System.SysUtils, System.IniFiles,
+  {$ELSE}
   Classes, SysUtils,
   {$IFDEF FPC}contnrs, {$ELSE}IniFiles, {$ENDIF}
+  {$ENDIF}
   OmniXML_Types;
 
 const

@@ -28,7 +28,12 @@ interface
 {$ENDIF}
 
 uses
-  Classes, SysUtils, OEncoding, OTextReadWrite, OmniXML_Types, OmniXML_Dictionary
+  {$IFDEF OmniXML_Namespaces}
+  System.Classes, System.SysUtils,
+  {$ELSE}
+  Classes, SysUtils,
+  {$ENDIF}
+  OEncoding, OTextReadWrite, OmniXML_Types, OmniXML_Dictionary
   {$IFDEF OmniXML_Generics}, Generics.Collections{$ENDIF}
   ;
 
@@ -303,9 +308,6 @@ type
     FOutBufferSize: Integer;
     FIndent: Integer;
     FOutputFormat: TOutputFormat;
-    FLinePos,
-    FLine: Integer;
-    FLineStartPosition: Integer;
     fBOMFound: Boolean;
     function GetEncoding: TEncoding;
     procedure SetEncoding(const AEncoding: TEncoding);
@@ -321,7 +323,6 @@ type
     procedure DecreaseIndent;
     procedure WriteIndent(const ForceNextLine: Boolean = False);
     // helper functions
-    function GetPosition: Integer;
     function GetPreviousOutputBuffer: XmlString;
   public
     property OutputFormat: TOutputFormat read GetOutputFormat write SetOutputFormat;
@@ -345,16 +346,18 @@ type
     function GetFilePos: Integer;
     function GetLine: Integer;
     function GetLinePos: Integer;
+    function GetSrcTextPos: Integer;
     function GetReason: string;
     function GetSrcText: XmlString;
     function GetURL: string;
     // public
     property ErrorCode: Integer read GetErrorCode;
     property FilePos: Integer read GetFilePos;
-    property Line: Integer read GetLine;
-    property LinePos: Integer read GetLinePos;
+    property Line: Integer read GetLine;//1-based
+    property LinePos: Integer read GetLinePos;//1-based
     property Reason: string read GetReason;
     property SrcText: XmlString read GetSrcText;
+    property SrcTextPos: Integer read GetSrcTextPos;//1-based, position of error in SrcText
     property URL: string read GetURL;
   end;
 
@@ -594,11 +597,13 @@ type
     FLinePos: Integer;
     FReason: string;
     FSrcText: XmlString;
+    FSrcTextPos: Integer;
     FURL: string;
     function GetErrorCode: Integer;
     function GetFilePos: Integer;
     function GetLine: Integer;
     function GetLinePos: Integer;
+    function GetSrcTextPos: Integer;
     function GetReason: string;
     function GetSrcText: XmlString;
     function GetURL: string;
@@ -608,16 +613,16 @@ type
     procedure SetLine(const Line: Integer);
     procedure SetLinePos(const LinePos: Integer);
     procedure SetReason(const Reason: string);
-    procedure SetSrcText(const SrcText: XmlString);
+    procedure SetSrcText(const SrcTextBefore, SrcTextAfter: XmlString);
     procedure SetURL(const URL: string);
   public
-    destructor Destroy; override;
     property ErrorCode: Integer read GetErrorCode;
     property FilePos: Integer read GetFilePos;
     property Line: Integer read GetLine;
     property LinePos: Integer read GetLinePos;
     property Reason: string read GetReason;
     property SrcText: XmlString read GetSrcText;
+    property SrcTextPos: Integer read GetSrcTextPos;
     property URL: string read GetURL;
   end;
 
@@ -1721,13 +1726,12 @@ begin
   FStreamMode := Mode;
   if FStreamMode = smRead then
   begin
-    FReader := TOTextReader.Create(Stream, fBOMFound, Encoding);
-    FLineStartPosition := FReader.ApproxStreamPosition;
+    FReader := TOTextReader.Create(Stream, Encoding);
+    fBOMFound := FReader.BOMFound;
   end
   else
   begin
     FWriter := TOTextWriter.Create(Stream, Encoding, WriteBOM);
-    FLineStartPosition := 0;
   end;
 
   // set defaults
@@ -1815,15 +1819,6 @@ end;
 function TXMLTextStream.ProcessChar(var ch: XmlChar): Boolean;
 begin
   Result := ReadChar(ch);
-
-  Inc(FLinePos);
-  // 2003-02-24 (mr): fixed bug (corrected #$0010 to #$000A)
-  if ch = #$000A then
-  begin
-    Inc(FLine);
-    FLinePos := 0;
-    FLineStartPosition := FReader.ApproxStreamPosition;
-  end;
 end;
 
 procedure TXMLTextStream.UndoRead;
@@ -1883,23 +1878,12 @@ begin
   Result := FOutBufferPos + 1;
 end;
 
-function TXMLTextStream.GetPosition: Integer;
-begin
-  Result := FReader.ApproxStreamPosition;
-end;
-
 function TXMLTextStream.GetPreviousOutputBuffer: XmlString;
 begin
   Result := FPreviousOutBuffer;
 end;
 
 { TXMLParseError }
-
-destructor TXMLParseError.Destroy;
-begin
-  inherited;
-  //
-end;
 
 function TXMLParseError.GetErrorCode: Integer;
 begin
@@ -1929,6 +1913,11 @@ end;
 function TXMLParseError.GetSrcText: XmlString;
 begin
   Result := FSrcText;
+end;
+
+function TXMLParseError.GetSrcTextPos: Integer;
+begin
+  Result := FSrcTextPos;
 end;
 
 function TXMLParseError.GetURL: string;
@@ -1961,9 +1950,10 @@ begin
   FReason := Reason;
 end;
 
-procedure TXMLParseError.SetSrcText(const SrcText: XmlString);
+procedure TXMLParseError.SetSrcText(const SrcTextBefore, SrcTextAfter: XmlString);
 begin
-  FSrcText := SrcText;
+  FSrcText := SrcTextBefore+SrcTextAfter;
+  FSrcTextPos := Length(SrcTextBefore);
 end;
 
 procedure TXMLParseError.SetURL(const URL: string);
@@ -2008,7 +1998,7 @@ begin
   {$IFDEF OmniXML_Generics}
   Result := FList.Add(XMLNode);
   {$ELSE}
-  Result := FList.Add(Pointer(XMLNode as IXMLNode));
+  Result := FList.Add(Pointer(XMLNode));
   XMLNode._AddRef;
   {$ENDIF}
 end;
@@ -2018,7 +2008,7 @@ begin
   {$IFDEF OmniXML_Generics}
   Result := FList.Remove(XMLNode);
   {$ELSE}
-  Result := FList.Remove(Pointer(XMLNode as IXMLNode));
+  Result := FList.Remove(Pointer(XMLNode));
   XMLNode._Release;
   {$ENDIF}
 end;
@@ -2038,18 +2028,18 @@ end;
 function TXMLCustomList.IndexOf(const XMLNode: IXMLNode): Integer;
 begin
   {$IFDEF OmniXML_Generics}
-  Result := FList.IndexOf(XMLNode as IXMLNode);
+  Result := FList.IndexOf(XMLNode);
   {$ELSE}
-  Result := FList.IndexOf(Pointer(XMLNode as IXMLNode));
+  Result := FList.IndexOf(Pointer(XMLNode));
   {$ENDIF}
 end;
 
 procedure TXMLCustomList.Insert(const Index: Integer; const XMLNode: IXMLNode);
 begin
   {$IFDEF OmniXML_Generics}
-  FList.Insert(Index, XMLNode as IXMLNode);
+  FList.Insert(Index, XMLNode);
   {$ELSE}
-  FList.Insert(Index, Pointer(XMLNode as IXMLNode));
+  FList.Insert(Index, Pointer(XMLNode));
   XMLNode._AddRef;
   {$ENDIF}
 end;
@@ -3704,6 +3694,7 @@ end;
 function TXMLDocument.LoadFromStream(const Stream: TStream): Boolean;
 var
   XTS: TXMLTextStream;
+  xPreviousText, xNextText: XmlString;
 
   function GetUnclosedTags: XmlString;
   begin
@@ -3734,16 +3725,16 @@ begin
       begin
         if E is EXMLException then
         begin
-          with FParseError do
-          begin
-            SetErrorCode(EXMLException(E).XMLCode);
-            SetFilePos(XTS.GetPosition);
-            SetLine(XTS.FLine + 1);
-            SetLinePos(XTS.FLinePos);
-            SetReason(E.Message);
-            SetSrcText(XTS.FReader.ReadPreviousString(100));
-            SetURL(Self.FURL);
-          end;
+          FParseError.SetErrorCode(EXMLException(E).XMLCode);
+          FParseError.SetFilePos(XTS.FReader.TextPosition);
+          FParseError.SetLine(XTS.FReader.TextLinePosition);//TextLinePosition is 0-based
+          FParseError.SetLinePos(XTS.FReader.TextCharPosition);//TextCharPosition is 0-based
+          FParseError.SetReason(E.Message);
+          xPreviousText := XTS.FReader.ReadPreviousString(30, True);
+          xNextText := XTS.FReader.ReadString(10, True);
+          FParseError.SetSrcText(xPreviousText, xNextText);//do not write ReadPreviousStringInLine() and ReadString() directly here because due to some Delphi optimizations, ReadString would be called first
+          FParseError.SetURL(Self.FURL);
+
           Result := False;
         end
         else

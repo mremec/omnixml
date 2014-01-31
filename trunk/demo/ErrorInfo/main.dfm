@@ -1,6 +1,6 @@
 object fMain: TfMain
-  Left = 108
-  Top = 166
+  Left = 305
+  Top = 197
   BorderStyle = bsDialog
   Caption = 'OmniXML demo: ErrorInfo'
   ClientHeight = 514
@@ -70,7 +70,7 @@ object fMain: TfMain
     Top = 24
     Width = 441
     Height = 249
-    Font.Charset = DEFAULT_CHARSET
+    Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
     Font.Height = -12
     Font.Name = 'Courier New'

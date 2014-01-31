@@ -8,6 +8,7 @@ unit OBufferedStreams;
 
   License:
     MPL 1.1 / GPLv2 / LGPLv2 / FPC modified LGPLv2
+    Please see the /license.txt file for more information.
 
 }
 
@@ -37,7 +38,12 @@ unit OBufferedStreams;
 interface
 
 uses
-  SysUtils, Classes, OWideSupp;
+  {$IFDEF O_NAMESPACES}
+  System.SysUtils, System.Classes,
+  {$ELSE}
+  SysUtils, Classes,
+  {$ENDIF}
+  OWideSupp;
 
 type
 
@@ -47,7 +53,7 @@ type
     fStreamPosition: ONativeInt;
     fStreamSize: ONativeInt;
 
-    {$IFDEF O_DELPHI_2009_UP}
+    {$IFDEF O_GENERICBYTES}
     fTempBuffer: TBytes;
     {$ELSE}
     fTempBuffer: Array of Byte;
@@ -81,7 +87,7 @@ type
     fStream: TStream;
     fStreamPosition: ONativeInt;
     fStreamSize: ONativeInt;
-    {$IFDEF O_DELPHI_2009_UP}
+    {$IFDEF O_GENERICBYTES}
     fTempBuffer: TBytes;
     {$ELSE}
     fTempBuffer: Array of Byte;

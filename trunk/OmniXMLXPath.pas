@@ -43,9 +43,12 @@ interface
 {$ENDIF}
 
 uses
+  {$IFDEF OmniXML_Namespaces}
+  System.SysUtils,
+  {$ELSE}
   SysUtils,
-  OmniXML_Types,
-  OmniXML;
+  {$ENDIF}
+  OmniXML_Types, OmniXML;
 
 type
   {:Exceptions raised on invalid XPath expressions.

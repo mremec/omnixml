@@ -1,0 +1,19 @@
+object Form1: TForm1
+  Left = 365
+  Height = 240
+  Top = 177
+  Width = 320
+  Caption = 'Form1'
+  ClientHeight = 240
+  ClientWidth = 320
+  LCLVersion = '1.0.8.0'
+  object BtnBasicTest: TBitBtn
+    Left = 36
+    Height = 30
+    Top = 47
+    Width = 132
+    Caption = 'BtnBasicTest'
+    OnClick = BtnBasicTestClick
+    TabOrder = 0
+  end
+end
