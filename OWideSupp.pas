@@ -8,6 +8,7 @@ unit OWideSupp;
 
   License:
     MPL 1.1 / GPLv2 / LGPLv2 / FPC modified LGPLv2
+    Please see the /license.txt file for more information.
 
 }
 
@@ -58,13 +59,18 @@ unit OWideSupp;
 interface
 
 uses
+  {$IFDEF O_NAMESPACES}
+  System.SysUtils, System.Classes
+  {$ELSE}
   SysUtils, Classes
+  {$ENDIF}
   {$IF DEFINED(O_DELPHI_2006_UP) AND DEFINED(O_DELPHI_2007_DOWN)}
   , WideStrUtils
   {$IFEND}
   {$IFDEF O_DELPHI_XE3_UP}
   , Character
   {$ENDIF}
+  {$IFDEF O_GENERICS}, Generics.Collections{$ENDIF}
   ;
 
 type
@@ -82,7 +88,7 @@ type
       ORealWideString = String;//UTF-16
       OWideChar = Char;
       POWideChar = PChar;
-      {$IFNDEF NEXTGEN}
+      {$IFDEF O_RAWBYTESTRING}
       ORawByteString = RawByteString;
       {$ENDIF}
       {$IFDEF O_DELPHI_2010_UP}
@@ -189,11 +195,11 @@ type
     procedure Insert(Index: Integer; const S: OWideString);
     procedure InsertObject(Index: Integer; const S: OWideString;
       AObject: TObject);
-    procedure LoadFromFile(const FileName: String); overload;
-    procedure LoadFromStream(Stream: TStream); overload;
+    procedure LoadFromFile(const FileName: String);
+    procedure LoadFromStream(Stream: TStream);
     procedure Move(CurIndex, NewIndex: Integer);
-    procedure SaveToFile(const FileName: string); overload;
-    procedure SaveToStream(Stream: TStream); overload;
+    procedure SaveToFile(const FileName: string);
+    procedure SaveToStream(Stream: TStream);
 
     procedure Sort;
     procedure CustomSort(Compare: TOWideStringListSortCompare); virtual;
@@ -229,6 +235,79 @@ type
   {$ELSE}
   TOWideStringList = TStringList;
   {$ENDIF}
+
+  TOTextBuffer = class(TPersistent)
+  private
+    fBuffer: Array of OWideChar;//Faster in D7 than OWideString
+    fAllocLength: Integer;//allocated length
+    fUsedLength: Integer;//used length
+    fRemaining: Integer;//fAllocLength-fUsedLength
+
+    fDefBufferLength: Integer;
+  protected
+    procedure AssignTo(Dest: TPersistent); override;
+  public
+    procedure Clear(const aFullClear: Boolean = True);
+    procedure GetBuffer(var outString: OWideString); overload;
+    procedure GetBuffer(var outString: OWideString; const aPosition, aLength: Integer); overload;
+    function GetBuffer: OWideString; overload;
+    procedure RemoveLastChar;
+    procedure RemoveLastString(const aLength: Integer);
+
+    procedure WriteChar(const aChar: OWideChar);
+    procedure WriteString(const aString: OWideString); overload;//outPosition 1-based!
+    procedure WriteString(const aString: OWideString; var outPosition, outLength: Integer); overload;//outPosition 1-based!
+    procedure Grow(const aMinChars: Integer);
+
+    constructor Create(const aBufferLength: Integer = 1024);
+  public
+    property UsedLength: Integer read fUsedLength;
+    property AllocLength: Integer read fAllocLength;
+  end;
+
+  TOWideStringStackItem = packed record
+    Position: Integer;
+    Length: Integer;
+  end;
+  POWideStringStackItem = ^TOWideStringStackItem;
+
+  TOWideStringStackArray = Array of TOWideStringStackItem;
+  POWideStringStackArray = ^TOWideStringStackArray;
+
+  TOBufferWideStrings = class(TPersistent)
+  private
+    fBuffer: TOTextBuffer;
+
+    {$IFDEF O_GENERICS}
+    fItems: TList<POWideStringStackArray>;//Memory blocks of 1024 elements. Do not reallocate its memory!
+    {$ELSE}
+    fItems: TList;
+    {$ENDIF}
+    fItemsAllocCount: Integer;//allocated count
+    fItemsUsedCount: Integer;//used count
+  private
+    function GetItem(const aIndex: Integer; var outItem: POWideStringStackItem): Boolean;
+  protected
+    procedure Grow;
+
+    procedure DoCreate; virtual;
+
+    procedure AssignTo(Dest: TPersistent); override;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  public
+    function Add(const aString: OWideString): Integer;
+    function Get(const aIndex: Integer): OWideString; overload; {$IFDEF O_INLINE}inline;{$ENDIF}
+    procedure Get(const aIndex: Integer; var outString: OWideString); overload; {$IFDEF O_INLINE}inline;{$ENDIF}
+
+    procedure DeleteLast;
+
+    procedure Clear(const aFullClear: Boolean = True);
+  public
+    property Count: Integer read fItemsUsedCount;
+  end;
+
 
 function OStringReplace(const S, OldPattern, NewPattern: OWideString;
   Flags: TReplaceFlags): OWideString; {$IFDEF O_INLINE}inline;{$ENDIF}
@@ -268,8 +347,11 @@ function OWSLength(const aOWS: OWideString): Integer; {$IFDEF O_INLINE}inline;{$
 {$ENDIF}
 
 //ofaststring to owidestring and back
-function OFastToWide(const aFast: OFastString): OWideString; {$IFDEF O_INLINE}inline;{$ENDIF}
-function OWideToFast(const aWide: OWideString): OFastString; {$IFDEF O_INLINE}inline;{$ENDIF}
+{$IFNDEF O_UNICODE}
+function OFastToWide(const aSourceFast: OFastString): OWideString; {$IFDEF O_INLINE}inline;{$ENDIF}
+function OWideToFast(const aSourceWide: OWideString): OFastString; overload; {$IFDEF O_INLINE}inline;{$ENDIF}
+procedure OWideToFast(const aSourceWide: OWideString; var outDestFast: OFastString); overload; {$IFDEF O_INLINE}inline;{$ENDIF}
+{$ENDIF}
 
 //split a text to pieces with a delimiter
 //if aConsiderQuotes=True, delimiters in quotes are ignored
@@ -442,43 +524,50 @@ begin
   {$ENDIF}
 end;
 
-function OFastToWide(const aFast: OFastString): OWideString;
 {$IFNDEF O_UNICODE}
+function OFastToWide(const aSourceFast: OFastString): OWideString;
 var
   xL: Integer;
-{$ENDIF}
+  xS: PWideChar;
+  I: Integer;
 begin
-  {$IFDEF O_UNICODE}
-  Result := aFast;
-  {$ELSE}
-  xL := Length(aFast);
-  if xL = 0 then begin
-    Result := '';
-  end else begin
-    SetLength(Result, xL div 2);
-    Move(aFast[1], Result[1], xL);
+  xL := Length(aSourceFast) div SizeOf(OWideChar);
+  SetLength(Result, xL);
+  if xL > 0 then
+  begin
+    xS := @aSourceFast[1];
+    for I := 1 to xL do
+    begin
+      Result[I] := xS^;
+      Inc(xS);
+    end;
   end;
-  {$ENDIF}
 end;
 
-function OWideToFast(const aWide: OWideString): OFastString;
-{$IFNDEF O_UNICODE}
+function OWideToFast(const aSourceWide: OWideString): OFastString;
+begin
+  OWideToFast(aSourceWide, Result);
+end;
+
+procedure OWideToFast(const aSourceWide: OWideString; var outDestFast: OFastString);
 var
   xL: Integer;
-{$ENDIF}
+  xR: PWideChar;
+  I: Integer;
 begin
-  {$IFDEF O_UNICODE}
-  Result := aWide;
-  {$ELSE}
-  xL := Length(aWide);
-  if xL = 0 then begin
-    Result := '';
-  end else begin
-    SetLength(Result, xL*2);
-    Move(aWide[1], Result[1], xL*2);
+  xL := Length(aSourceWide);
+  SetLength(outDestFast, xL*SizeOf(OWideChar));
+  if xL > 0 then
+  begin
+    xR := @outDestFast[1];
+    for I := 1 to xL do
+    begin
+      xR^ := aSourceWide[I];
+      Inc(xR);
+    end;
   end;
-  {$ENDIF}
 end;
+{$ENDIF}
 
 {$IFNDEF NEXTGEN}
 function OCharInSet(const aChar: OWideChar; const aSet: TSysCharSet): Boolean;
@@ -1014,6 +1103,281 @@ end;
 {$ENDIF}
 
 {$ENDIF O_UNICODE}//TOWideStringList
+
+{ TOBufferWideStrings }
+
+function TOBufferWideStrings.Add(const aString: OWideString): Integer;
+var
+  xNewItem: POWideStringStackItem;
+begin
+  Result := fItemsUsedCount;
+
+  if fItemsUsedCount = fItemsAllocCount then
+    Grow;
+
+  Inc(fItemsUsedCount);
+  GetItem(fItemsUsedCount-1, {%H-}xNewItem);
+  fBuffer.WriteString(aString, xNewItem.Position, xNewItem.Length);
+end;
+
+procedure TOBufferWideStrings.AssignTo(Dest: TPersistent);
+var
+  xDestStrL: TStrings;
+  xDestWStrL: TOWideStringList;
+  xDestBWS: TOBufferWideStrings;
+  I: Integer;
+begin
+  if Dest is TOWideStringList then begin
+    xDestWStrL := TOWideStringList(Dest);
+    xDestWStrL.Clear;
+    for I := 0 to Count-1 do
+      xDestWStrL.Add(Get(I));
+  end else
+  if Dest is TStrings then begin
+    xDestStrL := TStrings(Dest);
+    xDestStrL.Clear;
+    for I := 0 to Count-1 do
+      xDestStrL.Add(Get(I));
+  end else
+  if Dest is TOBufferWideStrings then begin
+    xDestBWS := TOBufferWideStrings(Dest);
+    xDestBWS.Clear;
+    for I := 0 to Count-1 do
+      xDestBWS.Add(Get(I));
+  end else
+    inherited;
+end;
+
+procedure TOBufferWideStrings.Clear(const aFullClear: Boolean);
+begin
+  fItemsUsedCount := 0;
+  fBuffer.Clear(aFullClear);
+end;
+
+constructor TOBufferWideStrings.Create;
+begin
+  inherited Create;
+
+  DoCreate;
+end;
+
+procedure TOBufferWideStrings.DeleteLast;
+var
+  xItem: POWideStringStackItem;
+begin
+  if fItemsUsedCount = 0 then
+    Exit;
+
+  GetItem(fItemsUsedCount-1, {%H-}xItem);
+  Dec(fItemsUsedCount);
+
+  fBuffer.RemoveLastString(xItem.Length);
+end;
+
+destructor TOBufferWideStrings.Destroy;
+var
+  I: Integer;
+begin
+  for I := 0 to fItems.Count-1 do
+    Dispose(POWideStringStackArray(fItems[I]));
+
+  fBuffer.Free;
+  fItems.Free;
+
+  inherited;
+end;
+
+procedure TOBufferWideStrings.DoCreate;
+begin
+  {$IFDEF O_GENERICS}
+  fItems := TList<POWideStringStackArray>.Create;
+  {$ELSE}
+  fItems := TList.Create;
+  {$ENDIF}
+
+  fBuffer := TOTextBuffer.Create(1024);
+end;
+
+function TOBufferWideStrings.Get(const aIndex: Integer): OWideString;
+begin
+  Get(aIndex, {%H-}Result);
+end;
+
+procedure TOBufferWideStrings.Get(const aIndex: Integer;
+  var outString: OWideString);
+var
+  xItem: POWideStringStackItem;
+begin
+  if GetItem(aIndex, {%H-}xItem) then
+    fBuffer.GetBuffer({%H-}outString, xItem.Position, xItem.Length)
+  else
+    outString := '';
+end;
+
+function TOBufferWideStrings.GetItem(const aIndex: Integer; var outItem: POWideStringStackItem): Boolean;
+begin
+  Result := (aIndex >= 0) and (aIndex < fItemsUsedCount);
+  if Result then
+    outItem := @(POWideStringStackArray(fItems[aIndex shr 10])^)[aIndex and 1023]//= [aNode div 1024][aNode mod 1024]
+  else
+    outItem := nil;
+end;
+
+procedure TOBufferWideStrings.Grow;
+var
+  xNewArray: POWideStringStackArray;
+begin
+  fItemsAllocCount := fItemsAllocCount+1024;
+
+  New(xNewArray);
+  SetLength(xNewArray^, 1024);
+  fItems.Add(xNewArray);
+end;
+
+{ TOTextBuffer }
+
+procedure TOTextBuffer.AssignTo(Dest: TPersistent);
+var
+  xDest: TOTextBuffer;
+begin
+  if Dest is TOTextBuffer then begin
+    xDest := TOTextBuffer(Dest);
+
+    if xDest.fAllocLength < Self.fAllocLength then begin
+      xDest.fAllocLength := Self.fAllocLength;
+      SetLength(xDest.fBuffer, xDest.fAllocLength);
+    end;
+
+    xDest.fUsedLength := Self.fUsedLength;
+    xDest.fRemaining := Self.fRemaining;
+
+    xDest.fBuffer := Copy(Self.fBuffer, 0, Self.fUsedLength);
+  end else
+    inherited;
+end;
+
+procedure TOTextBuffer.Clear(const aFullClear: Boolean);
+begin
+  if aFullClear and (fAllocLength > fDefBufferLength) then begin
+    fAllocLength := fDefBufferLength;
+    SetLength(fBuffer, fAllocLength);
+  end;
+
+  fUsedLength := 0;
+  fRemaining := fAllocLength;
+end;
+
+constructor TOTextBuffer.Create(const aBufferLength: Integer);
+begin
+  inherited Create;
+
+  fDefBufferLength := aBufferLength;
+  fAllocLength := aBufferLength;
+  fRemaining := fAllocLength;
+  fUsedLength := 0;
+  SetLength(fBuffer, fAllocLength);
+end;
+
+procedure TOTextBuffer.GetBuffer(var outString: OWideString);
+begin
+  GetBuffer(outString, 1, fUsedLength);
+end;
+
+procedure TOTextBuffer.GetBuffer(var outString: OWideString; const aPosition,
+  aLength: Integer);
+{$IFDEF O_DELPHI_2007_DOWN}
+var
+  I: Integer;
+{$ENDIF}
+begin
+  SetLength(outString, aLength);
+  if aLength > 0 then
+  begin
+    {$IFDEF O_DELPHI_2007_DOWN}
+    //Move() is extremly slow here in Delphi 7, copy char-by-char is faster for short strings
+    if aLength < 5 then begin
+      for I := 0 to aLength-1 do
+        outString[I+1] := fBuffer[aPosition+I-1];
+    end else begin
+      Move(fBuffer[aPosition-1], outString[1], aLength*SizeOf(OWideChar));
+    end;
+    {$ELSE}
+    Move(fBuffer[aPosition-1], outString[1], aLength*SizeOf(OWideChar));
+    {$ENDIF}
+  end;
+end;
+
+function TOTextBuffer.GetBuffer: OWideString;
+begin
+  GetBuffer({%H-}Result);
+end;
+
+procedure TOTextBuffer.Grow(const aMinChars: Integer);
+var
+  xGrowSize: Integer;
+begin
+  xGrowSize := 0;
+  while fRemaining+xGrowSize < aMinChars do
+    Inc(xGrowSize, fAllocLength+xGrowSize);
+
+  Inc(fRemaining, xGrowSize);
+  Inc(fAllocLength, xGrowSize);
+  SetLength(fBuffer, fAllocLength);
+end;
+
+procedure TOTextBuffer.RemoveLastChar;
+begin
+  Dec(fUsedLength);
+  Inc(fRemaining);
+  if fUsedLength < 0 then begin
+    fUsedLength := 0;
+    fRemaining := fAllocLength;
+  end;
+end;
+
+procedure TOTextBuffer.RemoveLastString(const aLength: Integer);
+begin
+  Dec(fUsedLength, aLength);
+  Inc(fRemaining, aLength);
+  if fUsedLength < 0 then begin
+    fUsedLength := 0;
+    fRemaining := fAllocLength;
+  end;
+end;
+
+procedure TOTextBuffer.WriteChar(const aChar: OWideChar);
+begin
+  if fRemaining = 0 then
+    Grow(1);
+
+  Inc(fUsedLength);
+  Dec(fRemaining);
+  fBuffer[fUsedLength-1] := aChar;
+end;
+
+procedure TOTextBuffer.WriteString(const aString: OWideString);
+var
+  xPos, xLen: Integer;
+begin
+  WriteString(aString, {%H-}xPos, {%H-}xLen);
+end;
+
+procedure TOTextBuffer.WriteString(const aString: OWideString; var outPosition,
+  outLength: Integer);
+begin
+  outLength := Length(aString);
+  outPosition := fUsedLength+1;
+
+  if outLength > 0 then begin
+    if fRemaining < outLength then
+      Grow(outLength);
+
+    Inc(fUsedLength, outLength);
+    Dec(fRemaining, outLength);
+
+    Move(aString[1], fBuffer[outPosition-1], outLength*SizeOf(OWideChar));
+  end;
+end;
 
 end.
 

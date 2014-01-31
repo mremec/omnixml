@@ -46,7 +46,7 @@ type
   private
     FXMLDocument     : IXMLDocument;
     FXPathExpressions: TStringList;
-    FXPathResults    : TList;
+    FXPathResults    : TStringList;
     procedure AddExample(const xPathExpression, description, expectedResult: string);
     procedure PrepareExamples;
   end; { TfrmXPathDemo }
@@ -70,7 +70,7 @@ procedure TfrmXPathDemo.AddExample(const xPathExpression, description,
 begin
   cbxExample.Items.Add(description);
   FXPathExpressions.Add(xPathExpression);
-  FXPathResults.Add(NewStr(expectedResult));
+  FXPathResults.Add(expectedResult);
 end; { TfrmXPathDemo.AddExample }
 
 procedure TfrmXPathDemo.btnCloseClick(Sender: TObject);
@@ -113,7 +113,7 @@ begin
     outResult.Lines.Add(Format('%d:', [iNode]));
     outResult.Lines.Add('  '+nodeList.Item[iNode].XML);
   end; //for iNode
-  validResult := (outResult.Lines.Text = PString(FXPathResults[cbxExample.ItemIndex])^);
+  validResult := (outResult.Lines.Text = FXPathResults[cbxExample.ItemIndex]);
   outResult.Lines.Add('');
   if validResult then
     outResult.Lines.Add('OK')
@@ -121,7 +121,7 @@ begin
     outResult.Lines.Add('ERROR');
     outResult.Lines.Add('');
     outResult.Lines.Add('Expected: ');
-    outResult.Lines.Append(PString(FXPathResults[cbxExample.ItemIndex])^);
+    outResult.Lines.Append(FXPathResults[cbxExample.ItemIndex]);
   end;
   outResult.Lines.Insert(0, Format('Result contains %d nodes', [nodeList.Length]));
 end; { TfrmXPathDemo.btnExecuteClick }
@@ -170,16 +170,12 @@ begin
   if not XMLLoadFromAnsiString(FXMLDocument, inpSourceDocument.Lines.Text) then
     raise Exception.Create('Source document is not valid');
   FXPathExpressions := TStringList.Create;
-  FXPathResults := TList.Create;
+  FXPathResults := TStringList.Create;
   PrepareExamples;
 end; { TfrmXPathDemo.FormCreate }
 
 procedure TfrmXPathDemo.FormDestroy(Sender: TObject);
-var
-  iResult: integer;
 begin
-  for iResult := 0 to FXPathResults.Count-1 do
-    DisposeStr(FXPathResults[iResult]);
   FreeAndNil(FXPathResults);
   FreeAndNil(FXPathExpressions);
 end; { TfrmXPathDemo.FormDestroy }

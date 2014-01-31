@@ -1,6 +1,6 @@
 object frmXPathDemo: TfrmXPathDemo
-  Left = 0
-  Top = 0
+  Left = 310
+  Top = 275
   BorderStyle = bsDialog
   Caption = 'OmniXMLXpath demo'
   ClientHeight = 408
@@ -86,7 +86,6 @@ object frmXPathDemo: TfrmXPathDemo
     Width = 321
     Height = 21
     Style = csDropDownList
-    ItemHeight = 13
     ParentShowHint = False
     ShowHint = True
     TabOrder = 1

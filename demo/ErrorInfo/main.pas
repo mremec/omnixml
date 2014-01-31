@@ -156,7 +156,7 @@ begin
       Add(Format('Reason: %s', [xmlDoc.ParseError.Reason]));
       Add(Format('URL: %s', [xmlDoc.ParseError.URL]));
       Add(Format('SrcText: %s', [xmlDoc.ParseError.SrcText]));
-      Add(StringOfChar(' ', 9) + StringOfChar('-', xmlDoc.ParseError.LinePos - 1) + '^');
+      Add(StringOfChar(' ', 9) + StringOfChar('-', xmlDoc.ParseError.SrcTextPos - 1) + '^');
     end
     else begin
       Text := 'No errors found.';
@@ -190,7 +190,7 @@ begin
     Exit;
   end;
 
-  NewXML := OriginalXML;
+  NewXML := StringReplace(OriginalXML, #13#10, #10, [rfReplaceAll]);
   EC := FECL[Integer(Node.Data) - 1];
   DocPos := Pos(EC.Original, NewXML);
 
