@@ -64,13 +64,22 @@ uses
   {$ELSE}
   SysUtils, Classes
   {$ENDIF}
+
   {$IF DEFINED(O_DELPHI_2006_UP) AND DEFINED(O_DELPHI_2007_DOWN)}
   , WideStrUtils
   {$IFEND}
+
   {$IFDEF O_DELPHI_XE3_UP}
   , Character
   {$ENDIF}
-  {$IFDEF O_GENERICS}, Generics.Collections{$ENDIF}
+
+  {$IFDEF O_GENERICS}
+    {$IFDEF O_NAMESPACES}
+    , System.Generics.Collections
+    {$ELSE}
+    , Generics.Collections
+    {$ENDIF}
+  {$ENDIF}
   ;
 
 type
@@ -646,7 +655,7 @@ end;
 
 {$IF NOT DEFINED(O_DELPHI_2006_UP)}
 //Delphi 6, 7, (2005?)
-function WideStringReplace(const S, OldPattern, NewPattern: Widestring;
+function WideStringReplace(const S, OldPattern, NewPattern: WideString;
   Flags: TReplaceFlags): WideString; {$IFDEF O_INLINE}inline;{$ENDIF}
 var
   SearchStr, Patt, NewStr: WideString;
