@@ -658,7 +658,6 @@ type
     function GetParentNode: IXMLNode;
     function GetPreviousSibling: IXMLNode;
     procedure SetNodeValue(const Value: XmlString); virtual;
-    procedure InternalWrite(const Stream: TStream; Text: XmlString); virtual;
     procedure InternalWriteToStream(const OutputStream: IUnicodeStream); virtual;
     procedure ReadFromStream(const Parent: TXMLNode; const InputStream: IUnicodeStream); virtual;
     procedure SetParentNode(const Parent: IXMLNode);
@@ -2435,11 +2434,6 @@ end;
 procedure TXMLNode.WriteToStream(const OutputStream: IUnicodeStream);
 begin
   InternalWriteToStream(OutputStream);
-end;
-
-procedure TXMLNode.InternalWrite(const Stream: TStream; Text: XmlString);
-begin
-  Stream.WriteBuffer(Text[1], Length(Text) * 2);
 end;
 
 function TXMLNode.GetXML: XmlString;

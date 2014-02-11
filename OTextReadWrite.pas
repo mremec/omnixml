@@ -47,6 +47,7 @@ uses
   {$ELSE}
   SysUtils, Classes,
   {$ENDIF}
+
   OBufferedStreams, OEncoding, OWideSupp;
 
 type
@@ -77,9 +78,6 @@ type
     //undo support
     fPreviousChar: OWideChar;
     fReadFromUndo: Boolean;
-
-    //custom buffer support
-    fCustomBuffer: Array[0..1] of TOTextBuffer;
 
     procedure SetEncoding(const Value: TEncoding);
 
@@ -140,25 +138,6 @@ type
     function ReadPreviousString(const aMaxChars: Integer; const aBreakAtNewLine: Boolean = False): OWideString;
     //go back 1 char. only 1 undo operation is supported
     procedure UndoRead;
-
-    //fast internal buffer support
-    //can be used for saving last read keyword etc.
-    //you may use up to 2 buffers
-      //write last read char to custom buffer
-    procedure WritePreviousCharToBuffer(const aBufferIndex: Byte = 0);
-      //write a char to custom buffer
-    procedure WriteCharToBuffer(const aChar: OWideChar; const aBufferIndex: Byte = 0);
-      //write a string to custom buffer
-    procedure WriteStringToBuffer(const aStr: OWideString; const aBufferIndex: Byte = 0);
-      //retrieve custom buffer
-    procedure GetCustomBuffer(var outString: OWideString; const aBufferIndex: Byte = 0); overload;
-    function GetCustomBuffer(const aBufferIndex: Byte = 0): OWideString; overload;
-      //retrieve custom buffer length
-    function CustomBufferLength(const aBufferIndex: Byte = 0): Integer;
-      //clear custom buffer
-    procedure ClearCustomBuffer(const aBufferIndex: Byte = 0);
-      //remove last character from custom buffer
-    procedure RemovePreviousCharFromBuffer(const aBufferIndex: Byte = 0);
 
     //if your original stream does not allow seeking and you want to change encoding at some point
     //  (e.g. the encoding is read from the text itself) you have to block the temporary buffer
@@ -308,11 +287,6 @@ begin
     TOBufferedReadStream(fStream).BlockFlushTempBuffer;
 end;
 
-procedure TOTextReader.ClearCustomBuffer(const aBufferIndex: Byte);
-begin
-  fCustomBuffer[aBufferIndex].Clear(False);
-end;
-
 constructor TOTextReader.Create(const aStream: TStream;
   const aDefaultSingleByteEncoding: TEncoding; const aBufferSize: Integer);
 begin
@@ -330,17 +304,8 @@ begin
   DoCreate(aBufferSize);
 end;
 
-function TOTextReader.CustomBufferLength(const aBufferIndex: Byte): Integer;
-begin
-  Result := fCustomBuffer[aBufferIndex].UsedLength;
-end;
-
 destructor TOTextReader.Destroy;
-var I: Integer;
 begin
-  for I := Low(fCustomBuffer) to High(fCustomBuffer) do
-    fCustomBuffer[I].Free;
-
   ReleaseDocument;
 
   if fOwnsEncoding then
@@ -350,18 +315,13 @@ begin
 end;
 
 procedure TOTextReader.DoCreate(const aBufferSize: Integer);
-var I: Integer;
 begin
   fBufferSize := aBufferSize;
-
-  for I := Low(fCustomBuffer) to High(fCustomBuffer) do
-    fCustomBuffer[I] := TOTextBuffer.Create;
 end;
 
 procedure TOTextReader.DoInit(const aNewStream: TStream;
   const aNewOwnsStream: Boolean; const aDefaultSingleByteEncoding: TEncoding);
 var
-  I: Integer;
   xStreamPosition: Integer;
 begin
   fEOF := False;
@@ -392,18 +352,6 @@ begin
   fTextPosition := 0;
   fTextCharPosition := 0;
   fTextLinePosition := 1;
-
-  for I := Low(fCustomBuffer) to High(fCustomBuffer) do
-    fCustomBuffer[I].Clear;
-end;
-
-procedure TOTextReader.GetCustomBuffer(var outString: OWideString; const aBufferIndex: Byte);
-var
-  xCurrentBuffer: TOTextBuffer;
-begin
-  xCurrentBuffer := fCustomBuffer[aBufferIndex];
-  xCurrentBuffer.GetBuffer({%H-}outString);
-  xCurrentBuffer.Clear;
 end;
 
 function TOTextReader.GetApproxStreamPosition: ONativeInt;
@@ -411,11 +359,6 @@ begin
   //YOU CAN'T KNOW IT EXACTLY!!! (due to Lazarus Unicode->UTF8 or Delphi UTF8->Unicode conversion etc.)
   //the char lengths may differ from one character to another
   Result := fStreamPosition - fStreamStartPosition + fTempStringPosition;
-end;
-
-function TOTextReader.GetCustomBuffer(const aBufferIndex: Byte): OWideString;
-begin
-  GetCustomBuffer({%H-}Result, aBufferIndex);
 end;
 
 {$IFDEF O_GENERICBYTES}
@@ -687,11 +630,6 @@ begin
   fStream := nil;
 end;
 
-procedure TOTextReader.RemovePreviousCharFromBuffer(const aBufferIndex: Byte);
-begin
-  fCustomBuffer[aBufferIndex].RemoveLastChar;
-end;
-
 procedure TOTextReader.SetEncoding(const Value: TEncoding);
 begin
   if fEncoding <> Value then begin//the condition fEncoding <> Value must be here!!!
@@ -724,26 +662,6 @@ begin
   fReadFromUndo := True;
   Dec(fTextCharPosition);
   Dec(fTextPosition);
-end;
-
-procedure TOTextReader.WriteCharToBuffer(const aChar: OWideChar; const aBufferIndex: Byte);
-begin
-  fCustomBuffer[aBufferIndex].WriteChar(aChar);
-end;
-
-procedure TOTextReader.WritePreviousCharToBuffer(const aBufferIndex: Byte);
-begin
-  if fPreviousChar <> #0 then
-    WriteCharToBuffer(fPreviousChar, aBufferIndex)
-end;
-
-procedure TOTextReader.WriteStringToBuffer(const aStr: OWideString;
-  const aBufferIndex: Byte);
-var
-  I: Integer;
-begin
-  for I := 1 to Length(aStr) do
-    WriteCharToBuffer(aStr[I], aBufferIndex);
 end;
 
 { TOTextWriter }
