@@ -3735,6 +3735,7 @@ begin
           FParseError.SetSrcText(xPreviousText, xNextText);//do not write ReadPreviousStringInLine() and ReadString() directly here because due to some Delphi optimizations, ReadString would be called first
           FParseError.SetURL(Self.FURL);
 
+          ClearChildNodes;
           Result := False;
         end
         else
