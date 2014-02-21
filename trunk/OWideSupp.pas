@@ -654,41 +654,70 @@ begin
 end;
 
 {$IF NOT DEFINED(O_DELPHI_2006_UP)}
-//Delphi 6, 7, (2005?)
+//Delphi 6, 7
 function WideStringReplace(const S, OldPattern, NewPattern: WideString;
   Flags: TReplaceFlags): WideString; {$IFDEF O_INLINE}inline;{$ENDIF}
 var
-  SearchStr, Patt, NewStr: WideString;
-  Offset: Integer;
+  SearchStr, OldPatt: WideString;
+  I, L, K, OldPattLength, NewPattLength, SLength: Integer;
 begin
+  if (OldPattern = '') or (S = '') then
+    Exit;
+    
   if rfIgnoreCase in Flags then
   begin
     SearchStr := WideUpperCase(S);
-    Patt := WideUpperCase(OldPattern);
-  end else
+    OldPatt := WideUpperCase(OldPattern);
+  end
+  else
   begin
     SearchStr := S;
-    Patt := OldPattern;
+    OldPatt := OldPattern;
   end;
-  NewStr := S;
-  Result := '';
-  while SearchStr <> '' do
+  OldPattLength := Length(OldPatt);
+  NewPattLength := Length(NewPattern);
+  SLength := Length(S);
+  
+  if NewPattLength <= OldPattLength then
+    SetLength(Result, SLength)
+  else
+    SetLength(Result, (SLength*NewPattLength) div OldPattLength + OldPattLength);//maximum length + some extra buffer just in case...
+
+  I := 1;//position in S
+  L := 1;//position in Result
+  while I <= SLength-OldPattLength+1 do
   begin
-    Offset := Pos(Patt, SearchStr);
-    if Offset = 0 then
+    if CompareMem(@SearchStr[I], @OldPatt[1], OldPattLength*SizeOf(WideChar)) then
     begin
-      Result := Result + NewStr;
-      Break;
-    end;
-    Result := Result + Copy(NewStr, 1, Offset - 1) + NewPattern;
-    NewStr := Copy(NewStr, Offset + Length(OldPattern), MaxInt);
-    if not (rfReplaceAll in Flags) then
+      //pattern found
+      for K := 1 to NewPattLength do
+      begin
+        Result[L] := NewPattern[K];
+        Inc(L);
+      end;
+      Inc(I, OldPattLength);
+      if not(rfReplaceAll in Flags) then
+        break;
+    end
+    else
     begin
-      Result := Result + NewStr;
-      Break;
+      //pattern not found
+      Result[L] := S[I];
+      Inc(I);
+      Inc(L);
     end;
-    SearchStr := Copy(SearchStr, Offset + Length(Patt), MaxInt);
   end;
+
+  //write trail
+  while I <= SLength do
+  begin
+    Result[L] := S[I];
+    Inc(I);
+    Inc(L);
+  end;
+
+  if Length(Result) <> L-1 then
+    SetLength(Result, L-1);
 end;
 {$IFEND}
 

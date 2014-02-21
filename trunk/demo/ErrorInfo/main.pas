@@ -187,6 +187,7 @@ begin
 
   if Node.Data = nil then begin
     reXML.Text := OriginalXML;
+    mErrorInfo.Text := '';
     Exit;
   end;
 
