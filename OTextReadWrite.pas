@@ -66,9 +66,9 @@ type
     fStreamStartPosition: ONativeInt;
     fOwnsStream: Boolean;
 
-    fTextPosition: Integer;//character position, 1-based
-    fTextCharPosition: Integer;//character, 1-based
-    fTextLinePosition: Integer;//line, 1-based
+    fFilePosition: Integer;//current character in file (in character units, not bytes!), 1-based
+    fLinePosition: Integer;//current character in line, 1-based
+    fLine: Integer;//current line in file, 1-based
 
     fEncoding: TEncoding;
     fOwnsEncoding: Boolean;
@@ -91,11 +91,11 @@ type
       const aDefaultSingleByteEncoding: TEncoding); virtual;
   public
     //create
-    constructor Create(const aBufferSize: Integer = 10*1024 {10 KB}); overload;
+    constructor Create(const aBufferSize: Integer = OBUFFEREDSTREAMS_DEFBUFFERSIZE); overload;
     //create and init
     constructor Create(const aStream: TStream;
       const aDefaultSingleByteEncoding: TEncoding = nil;
-      const aBufferSize: Integer = 10*1024 {10 KB}); overload;
+      const aBufferSize: Integer = OBUFFEREDSTREAMS_DEFBUFFERSIZE); overload;
 
     destructor Destroy; override;
   public
@@ -160,9 +160,9 @@ type
     //Character position in text
     //  -> in Lazarus, the position is always in UTF-8 characters (no way to go around that since Lazarus uses UTF-8).
     //  -> in Delphi the position is always correct
-    property TextPosition: Integer read fTextPosition;//absolute character position in file, 1-based
-    property TextCharPosition: Integer read fTextCharPosition;//current character in line, 1-based
-    property TextLinePosition: Integer read fTextLinePosition;//current line, 1-based
+    property FilePosition: Integer read fFilePosition;//absolute character position in file, 1-based
+    property LinePosition: Integer read fLinePosition;//current character in line, 1-based
+    property Line: Integer read fLine;//current line, 1-based
     //size of original stream
     property StreamSize: ONativeInt read fStreamSize;
   end;
@@ -190,11 +190,11 @@ type
       const aEncoding: TEncoding; const aWriteBOM: Boolean);
   public
     //create
-    constructor Create(const aBufferSize: Integer = 10*1024 {10*1024 Chars = 20 KB}); overload;
+    constructor Create(const aCharBufferSize: Integer = OBUFFEREDSTREAMS_DEFCHARBUFFERSIZE); overload;
     //create and init
     constructor Create(const aStream: TStream;
       const aEncoding: TEncoding = nil; const aWriteBOM: Boolean = True;
-      const aBufferSize: Integer = 10*1024 {10*1024 Chars = 20 KB}); overload;
+      const aCharBufferSize: Integer = OBUFFEREDSTREAMS_DEFCHARBUFFERSIZE); overload;
 
     destructor Destroy; override;
   public
@@ -236,12 +236,12 @@ function GetEncodingFromStream(const aStream: TStream;
 
 implementation
 
-{$IFDEF FPC}
-uses LazUTF8;
-{$ENDIF}
 
-resourcestring
-  OTextReadWrite_Undo2Times = 'The aStream parameter must be assigned when creating a buffered stream.';
+uses
+  {$IFDEF FPC}
+  LazUTF8,
+  {$ENDIF}
+  OXmlLNG;
 
 function GetEncodingFromStream(const aStream: TStream;
   var ioTempStringPosition: ONativeInt;
@@ -269,7 +269,7 @@ begin
   aStream.ReadBuffer(xBuffer[TEncodingBuffer_FirstElement], xSize);
   xEncoding := nil;
   ioTempStringPosition := ioTempStringPosition +
-    TEncoding.GetBufferEncoding(xBuffer, xEncoding {$IFDEF O_DELPHI_XE_UP}, Result{$ENDIF});
+    TEncoding.GetEncodingFromBOM(xBuffer, xEncoding {$IFDEF O_DELPHI_XE_UP}, Result{$ENDIF});
 
   if Assigned(xEncoding) then
     Result := xEncoding;
@@ -349,9 +349,9 @@ begin
   fPreviousChar := #0;
   fReadFromUndo := False;
 
-  fTextPosition := 0;
-  fTextCharPosition := 0;
-  fTextLinePosition := 1;
+  fFilePosition := 0;
+  fLinePosition := 0;
+  fLine := 1;
 end;
 
 function TOTextReader.GetApproxStreamPosition: ONativeInt;
@@ -484,7 +484,11 @@ begin
 
   Inc(fStreamPosition, xReadBytes+xUTF8Inc);
   SetLength(xBuffer, xReadBytes+xUTF8Inc);
+  {$IFDEF O_DELPHI_2009_UP}
   fTempString := fEncoding.GetString(xBuffer);
+  {$ELSE}
+  fEncoding.BufferToString(xBuffer, fTempString);
+  {$ENDIF}
   fTempStringLength := Length(fTempString);
   fTempStringRemain := fTempStringLength;
   fTempStringPosition := 1;
@@ -514,8 +518,8 @@ begin
     outChar := fPreviousChar;
     fReadFromUndo := False;
     Result := True;
-    Inc(fTextCharPosition);
-    Inc(fTextPosition);
+    Inc(fLinePosition);
+    Inc(fFilePosition);
     Exit;
   end;
 
@@ -527,21 +531,21 @@ begin
     case outChar of
       #10: begin
         if fPreviousChar <> #13 then
-          Inc(fTextLinePosition);
-        fTextCharPosition := 0;
+          Inc(fLine);
+        fLinePosition := 0;
       end;
       #13: begin
-        fTextCharPosition := 0;
-        Inc(fTextLinePosition);
+        fLinePosition := 0;
+        Inc(fLine);
       end;
     else
-      Inc(fTextCharPosition);
+      Inc(fLinePosition);
     end;
 
     fPreviousChar := outChar;
     Inc(fTempStringPosition);
     Dec(fTempStringRemain);
-    Inc(fTextPosition);
+    Inc(fFilePosition);
     Result := True;
   end else begin
     fEOF := True;
@@ -588,7 +592,7 @@ var
   I, R: Integer;
   xC: OWideChar;
 const
-  cMaxStartBuffer = 10*1024;
+  cMaxStartBuffer = OBUFFEREDSTREAMS_DEFCHARBUFFERSIZE;
 begin
   if aMaxChars <= 0 then begin
     Result := '';
@@ -657,29 +661,29 @@ end;
 procedure TOTextReader.UndoRead;
 begin
   if fReadFromUndo then
-    raise EOTextReader.Create(OTextReadWrite_Undo2Times);
+    raise EOTextReader.Create(OXmlLng_CannotUndo2Times);
 
   fReadFromUndo := True;
-  Dec(fTextCharPosition);
-  Dec(fTextPosition);
+  Dec(fLinePosition);
+  Dec(fFilePosition);
 end;
 
 { TOTextWriter }
 
-constructor TOTextWriter.Create(const aBufferSize: Integer);
+constructor TOTextWriter.Create(const aCharBufferSize: Integer);
 begin
   inherited Create;
 
-  DoCreate(aBufferSize)
+  DoCreate(aCharBufferSize)
 end;
 
 constructor TOTextWriter.Create(const aStream: TStream;
   const aEncoding: TEncoding; const aWriteBOM: Boolean;
-  const aBufferSize: Integer);
+  const aCharBufferSize: Integer);
 begin
   inherited Create;
 
-  DoCreate(aBufferSize);
+  DoCreate(aCharBufferSize);
 
   InitStream(aStream, aEncoding, aWriteBOM);
 end;
@@ -816,7 +820,7 @@ var
 begin
   if fWriteBOM and not fBOMWritten then begin
     //WRITE BOM
-    xBOM := fEncoding.GetPreamble;
+    xBOM := fEncoding.GetBOM;
     if Length(xBOM) > 0 then
       fStream.WriteBuffer(xBOM[TEncodingBuffer_FirstElement], Length(xBOM));
   end;
@@ -824,11 +828,19 @@ begin
 
   if aMaxLength < 0 then begin
     //write complete string
+    {$IFDEF O_DELPHI_2009_UP}
     xBytes := fEncoding.GetBytes(aString);
+    {$ELSE}
+    fEncoding.StringToBuffer(aString, {%H-}xBytes);
+    {$ENDIF}
     xBytesLength := Length(xBytes);
   end else begin
     //write part of string
+    {$IFDEF O_DELPHI_2009_UP}
     xBytes := fEncoding.GetBytes(Copy(aString, 1, aMaxLength));
+    {$ELSE}
+    fEncoding.StringToBuffer(Copy(aString, 1, aMaxLength), {%H-}xBytes);
+    {$ENDIF}
     xBytesLength := Length(xBytes);
   end;
 

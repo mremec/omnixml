@@ -46,6 +46,10 @@ uses
 
   OWideSupp;
 
+const
+  OBUFFEREDSTREAMS_DEFBUFFERSIZE = 16*1024;//16 KB
+  OBUFFEREDSTREAMS_DEFCHARBUFFERSIZE = OBUFFEREDSTREAMS_DEFBUFFERSIZE div SizeOf(OWideChar);//16 KB
+
 type
 
   TOBufferedWriteStream = class(TStream)
@@ -64,7 +68,7 @@ type
   protected
     function GetSize: Int64; {$IF DEFINED(O_DELPHI_7_UP) OR DEFINED(FPC)}override;{$IFEND}
   public
-    constructor Create(const aStream: TStream; const aBufferSize: ONativeInt = 10*1024 {10 KB});
+    constructor Create(const aStream: TStream; const aBufferSize: ONativeInt = OBUFFEREDSTREAMS_DEFBUFFERSIZE);
     destructor Destroy; override;
 
     function Write(const Buffer; Count: LongInt): LongInt; override;
@@ -102,7 +106,7 @@ type
   protected
     function GetSize: Int64; {$IF DEFINED(O_DELPHI_7_UP) OR DEFINED(FPC)}override;{$IFEND}
   public
-    constructor Create(const aStream: TStream; const aBufferSize: ONativeInt = 10*1024 {10 KB});
+    constructor Create(const aStream: TStream; const aBufferSize: ONativeInt = OBUFFEREDSTREAMS_DEFBUFFERSIZE);
 
     function Write(const {%H-}Buffer; {%H-}Count: LongInt): LongInt; override;
     {$IFDEF O_DELPHI_XE3_UP}

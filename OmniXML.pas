@@ -1301,7 +1301,7 @@ begin
         if EncodingEndPos > 0 then
         begin
           Encoding := Copy(PI.Data, EncodingStartPos, EncodingEndPos - EncodingStartPos - 1);
-          Result := GetCreateCodePage(Encoding, OutEncoding);
+          Result := TEncoding.EncodingFromAlias(Encoding, OutEncoding);
         end;
       end;
     end;
@@ -3661,7 +3661,7 @@ var
 begin
   Stream := TMemoryStream.Create;
   try
-    BOM := TEncoding.OWideStringEncoding.GetPreamble;
+    BOM := TEncoding.OWideStringEncoding.GetBOM;
     Stream.Write(BOM[TEncodingBuffer_FirstElement], Length(BOM));
     Stream.Write(PXmlChar(XML)^, Length(XML) * SizeOf(XmlChar));
     Stream.Seek(0, soFromBeginning);
@@ -3720,9 +3720,9 @@ begin
         if E is EXMLException then
         begin
           FParseError.SetErrorCode(EXMLException(E).XMLCode);
-          FParseError.SetFilePos(XTS.FReader.TextPosition);
-          FParseError.SetLine(XTS.FReader.TextLinePosition);//TextLinePosition is 0-based
-          FParseError.SetLinePos(XTS.FReader.TextCharPosition);//TextCharPosition is 0-based
+          FParseError.SetFilePos(XTS.FReader.FilePosition);
+          FParseError.SetLine(XTS.FReader.Line);
+          FParseError.SetLinePos(XTS.FReader.LinePosition);
           FParseError.SetReason(E.Message);
           xPreviousText := XTS.FReader.ReadPreviousString(30, True);
           xNextText := XTS.FReader.ReadString(10, True);

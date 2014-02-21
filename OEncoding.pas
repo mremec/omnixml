@@ -15,8 +15,7 @@ unit OEncoding;
 {
   OEncoding.pas
 
-  TEncoding concept from Delphi 2009 for non-unicode Delphi and FPC
-    - a little bit less functionality but should be sufficient
+  Convert buffers to strings and back with encoding classes.
 
 }
 
@@ -100,23 +99,34 @@ type
 
   TEncoding = class(TObject)
   public
-    class function GetBufferEncoding(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding): Integer; overload;
-    class function GetBufferEncoding(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding;
-      aDefaultEncoding: TEncoding): Integer; overload;
-    function GetPreamble: TEncodingBuffer; virtual; abstract;
+    //functions that convert strings to buffers and vice versa
+    function BufferToString(const aBytes: TEncodingBuffer): OWideString; overload;
+    procedure BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString); overload; virtual; abstract;//faster in D7 and FPC than "function BufferToString"
+    function StringToBuffer(const S: OWideString): TEncodingBuffer; overload;
+    procedure StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer); overload; virtual; abstract;//faster in D7 and FPC than "function StringToBuffer"
 
-    function GetString(const aBytes: TEncodingBuffer): OWideString; virtual; abstract;
-    function GetBytes(const S: OWideString): TEncodingBuffer; virtual; abstract;
-
-    class function GetEncoding(aCodePage: Integer): TEncoding;
   public
+    //functions that get information about current encoding object
     class function IsSingleByte: Boolean; virtual; abstract;
     class function IsStandardEncoding(aEncoding: TEncoding): Boolean;
 
     function EncodingName: OWideString; virtual; abstract;
     function EncodingAlias: OWideString;
     function EncodingCodePage: Cardinal;
+
   public
+    //class functions for finding correct encoding from BOM, code page, alias etc.
+    class function GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding): Integer; overload;
+    class function GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding;
+      aDefaultEncoding: TEncoding): Integer; overload;
+    function GetBOM: TEncodingBuffer; virtual; abstract;
+
+    class function EncodingFromCodePage(aCodePage: Integer): TEncoding;
+    class function EncodingFromAlias(const aAlias: OWideString; var outEncoding: TEncoding): Boolean;
+    class function AliasToCodePage(const aAlias: OWideString): Cardinal;
+    class function CodePageToAlias(const aCodePage: Cardinal): OWideString;
+  public
+    //retrieve standard encodings
     class function Default: TEncoding;
     class function Unicode: TEncoding;
     class function UTF8: TEncoding;
@@ -129,18 +139,18 @@ type
 
   TUnicodeEncoding = class(TEncoding)
   public
-    function GetPreamble: TEncodingBuffer; override;
-    function GetString(const aBytes: TEncodingBuffer): OWideString; override;
-    function GetBytes(const S: OWideString): TEncodingBuffer; override;
+    function GetBOM: TEncodingBuffer; override;
+    procedure BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString); override;
+    procedure StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer); override;
     class function IsSingleByte: Boolean; override;
     function EncodingName: OWideString; override;
   end;
 
   TUTF8Encoding = class(TEncoding)
   public
-    function GetPreamble: TEncodingBuffer; override;
-    function GetString(const aBytes: TEncodingBuffer): OWideString; override;
-    function GetBytes(const S: OWideString): TEncodingBuffer; override;
+    function GetBOM: TEncodingBuffer; override;
+    procedure BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString); override;
+    procedure StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer); override;
     class function IsSingleByte: Boolean; override;
     function EncodingName: OWideString; override;
   end;
@@ -151,9 +161,9 @@ type
   public
     constructor Create(aCodePage: Cardinal);
   public
-    function GetPreamble: TEncodingBuffer; override;
-    function GetString(const Bytes: TEncodingBuffer): OWideString; override;
-    function GetBytes(const S: OWideString): TEncodingBuffer; override;
+    function GetBOM: TEncodingBuffer; override;
+    procedure BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString); override;
+    procedure StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer); override;
     class function IsSingleByte: Boolean; override;
     function EncodingName: OWideString; override;
   public
@@ -175,22 +185,21 @@ type
     class function ANSI: TEncoding;
     {$IFEND}
     class function OWideStringEncoding: TEncoding;
+
+    class function EncodingFromCodePage(aCodePage: Integer): TEncoding;
+    class function EncodingFromAlias(const aAlias: OWideString; var outEncoding: TEncoding): Boolean;
+    class function AliasToCodePage(const aAlias: OWideString): Cardinal;
+    class function CodePageToAlias(const aCodePage: Cardinal): OWideString;
+    class function GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding): Integer; overload;
+    class function GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding;
+      aDefaultEncoding: TEncoding): Integer; overload;
+    function GetBOM: TEncodingBuffer;
   end;
   TMBCSEncodingHelper = class helper for TMBCSEncoding
   public
     function GetCodePage: Cardinal;
   end;
 {$IFEND}
-
-
-//get or create code page from identifier
-function GetCreateCodePage(const aCodePage: Cardinal): TEncoding; overload;
-//get or create code page from alias, returns true if found
-function GetCreateCodePage(const aAlias: OWideString; var outEncoding: TEncoding): Boolean; overload;
-//get or create code page from alias, returns nil if not found
-function GetCreateCodePage(const aAlias: OWideString): TEncoding; overload;
-function AliasToCodePage(const aAlias: OWideString): Cardinal;
-function CodePageToAlias(const aCodePage: Cardinal): OWideString;
 
 implementation
 
@@ -368,13 +377,13 @@ begin
   {$ENDIF}
 end;
 
-class function TEncoding.GetBufferEncoding(const aBuffer: TEncodingBuffer;
+class function TEncoding.GetEncodingFromBOM(const aBuffer: TEncodingBuffer;
   var outEncoding: TEncoding): Integer;
 begin
-  Result := GetBufferEncoding(aBuffer, outEncoding, Default);
+  Result := GetEncodingFromBOM(aBuffer, outEncoding, Default);
 end;
 
-class function TEncoding.GetBufferEncoding(const aBuffer: TEncodingBuffer;
+class function TEncoding.GetEncodingFromBOM(const aBuffer: TEncodingBuffer;
   var outEncoding: TEncoding; aDefaultEncoding: TEncoding): Integer;
 begin
   if (Length(aBuffer) >= 3) and
@@ -392,9 +401,19 @@ begin
     outEncoding := Unicode;
     Result := 2;
   end else begin
-    outEncoding := ADefaultEncoding;
+    outEncoding := aDefaultEncoding;
     Result := 0;
   end;
+end;
+
+function TEncoding.BufferToString(const aBytes: TEncodingBuffer): OWideString;
+begin
+  BufferToString(aBytes, {%H-}Result);
+end;
+
+function TEncoding.StringToBuffer(const S: OWideString): TEncodingBuffer;
+begin
+  StringToBuffer(S, {%H-}Result);
 end;
 
 class function TEncoding.Unicode: TEncoding;
@@ -457,20 +476,6 @@ begin
     Result := 0;
 end;
 
-class function TEncoding.GetEncoding(aCodePage: Integer): TEncoding;
-begin
-  case aCodePage of
-    CP_UNICODE: Result := TUnicodeEncoding.Create;
-    {$IFDEF O_DELPHI_2009_UP}
-    CP_UNICODE_BE: Result := TBigEndianUnicodeEncoding.Create;
-    CP_UTF7: Result := TUTF7Encoding.Create;
-    {$ENDIF}
-    CP_UTF8: Result := TUTF8Encoding.Create;
-  else
-    Result := TMBCSEncoding.Create(aCodePage);
-  end;
-end;
-
 destructor TEncoding.Destroy;
 begin
   if (Self = fxANSIEncoding) then
@@ -510,7 +515,7 @@ begin
 end;
 {$ENDIF}
 
-function TMBCSEncoding.GetBytes(const S: OWideString): TEncodingBuffer;
+procedure TMBCSEncoding.StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer);
 {$IFDEF MSWINDOWS}
 var
   xLength: integer;
@@ -520,7 +525,7 @@ var
 {$ENDIF}
 begin
   if S = '' then begin
-    Result := '';
+    outBuffer := '';
     Exit;
   end;
 
@@ -531,33 +536,33 @@ begin
       WC_COMPOSITECHECK or WC_DISCARDNS or WC_SEPCHARS or WC_DEFAULTCHAR,
       PWideChar(@xUS[1]), -1, nil, 0, nil, nil);
 
-    SetLength(Result, xLength-1);
+    SetLength(outBuffer, xLength-1);
     if xLength > 1 then
       WideCharToMultiByte(codePage,
         WC_COMPOSITECHECK or WC_DISCARDNS or WC_SEPCHARS or WC_DEFAULTCHAR,
-        PWideChar(@xUS[1]), -1, @Result[1], xLength-1, nil, nil);
+        PWideChar(@xUS[1]), -1, @outBuffer[1], xLength-1, nil, nil);
     {$ELSE}
     xLength := WideCharToMultiByte(fCodePage,
       WC_COMPOSITECHECK or WC_DISCARDNS or WC_SEPCHARS or WC_DEFAULTCHAR,
       PWideChar(@S[1]), -1, nil, 0, nil, nil);
 
-    SetLength(Result, xLength-1);
+    SetLength(outBuffer, xLength-1);
     if xLength > 1 then
       WideCharToMultiByte(codePage,
         WC_COMPOSITECHECK or WC_DISCARDNS or WC_SEPCHARS or WC_DEFAULTCHAR,
-        PWideChar(@S[1]), -1, @Result[1], xLength-1, nil, nil);
+        PWideChar(@S[1]), -1, @outBuffer[1], xLength-1, nil, nil);
     {$ENDIF}
   {$ELSE}
-  Result := UTF8ToCodePage(S, fCodePage);
+  outBuffer := UTF8ToCodePage(S, fCodePage);
   {$ENDIF}
 end;
 
-function TMBCSEncoding.GetPreamble: TEncodingBuffer;
+function TMBCSEncoding.GetBOM: TEncodingBuffer;
 begin
   Result := '';
 end;
 
-function TMBCSEncoding.GetString(const Bytes: TEncodingBuffer): OWideString;
+procedure TMBCSEncoding.BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString);
 {$IFDEF MSWINDOWS}
 var
   xLength: integer;
@@ -566,26 +571,26 @@ var
   {$ENDIF}
 {$ENDIF}
 begin
-  if Bytes = '' then begin
-    Result := '';
+  if aBytes = '' then begin
+    outString := '';
     Exit;
   end;
 
   {$IFDEF MSWINDOWS}
     {$IFDEF FPC}
-    xLength := MultiByteToWideChar(fCodePage, MB_PRECOMPOSED, PAnsiChar(@Bytes[1]), -1, nil, 0);
+    xLength := MultiByteToWideChar(fCodePage, MB_PRECOMPOSED, PAnsiChar(@aBytes[1]), -1, nil, 0);
     SetLength(xUS, xLength-1);
     if xLength > 1 then
-      MultiByteToWideChar(CodePage, MB_PRECOMPOSED, PAnsiChar(@Bytes[1]), -1, PWideChar(@xUS[1]), xLength-1);
-    Result := UTF8Encode(xUS);
+      MultiByteToWideChar(CodePage, MB_PRECOMPOSED, PAnsiChar(@aBytes[1]), -1, PWideChar(@xUS[1]), xLength-1);
+    outString := UTF8Encode(xUS);
     {$ELSE}
-    xLength := MultiByteToWideChar(fCodePage, MB_PRECOMPOSED, PAnsiChar(@Bytes[1]), -1, nil, 0);
-    SetLength(Result, xLength-1);
+    xLength := MultiByteToWideChar(fCodePage, MB_PRECOMPOSED, PAnsiChar(@aBytes[1]), -1, nil, 0);
+    SetLength(outString, xLength-1);
     if xLength > 1 then
-      MultiByteToWideChar(CodePage, MB_PRECOMPOSED, PAnsiChar(@Bytes[1]), -1, PWideChar(@Result[1]), xLength-1);
+      MultiByteToWideChar(CodePage, MB_PRECOMPOSED, PAnsiChar(@aBytes[1]), -1, PWideChar(@outString[1]), xLength-1);
     {$ENDIF}
   {$ELSE}
-  Result := CodePageToUTF8(Bytes, fCodePage);
+  outString := CodePageToUTF8(aBytes, fCodePage);
   {$ENDIF}
 end;
 
@@ -605,7 +610,7 @@ begin
 {$ENDIF}
 end;
 
-function TUnicodeEncoding.GetBytes(const S: OWideString): TEncodingBuffer;
+procedure TUnicodeEncoding.StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer);
 var xCharCount: Integer;
   {$IFDEF FPC}
   xUS: UnicodeString;
@@ -615,28 +620,28 @@ begin
   //FPC
   xUS := UTF8Decode(S);
   xCharCount := Length(xUS);
-  SetLength(Result, xCharCount*2);
+  SetLength(outBuffer, xCharCount*2);
   if xCharCount > 0 then begin
-    Move(xUS[1], Result[1], xCharCount*2);
+    Move(xUS[1], outBuffer[1], xCharCount*2);
   end;
   {$ELSE}
   //DELPHI
   xCharCount := Length(S);
-  SetLength(Result, xCharCount*2);
+  SetLength(outBuffer, xCharCount*2);
   if xCharCount > 0 then begin
-    Move(S[1], Result[1], xCharCount*2);
+    Move(S[1], outBuffer[1], xCharCount*2);
   end;
   {$ENDIF}
 end;
 
-function TUnicodeEncoding.GetPreamble: TEncodingBuffer;
+function TUnicodeEncoding.GetBOM: TEncodingBuffer;
 begin
   SetLength(Result, 2);
   Result[TEncodingBuffer_FirstElement+0] := #$FF;
   Result[TEncodingBuffer_FirstElement+1] := #$FE;
 end;
 
-function TUnicodeEncoding.GetString(const aBytes: TEncodingBuffer): OWideString;
+procedure TUnicodeEncoding.BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString);
 var
   xByteCount: Integer;
   {$IFDEF FPC}
@@ -645,18 +650,18 @@ var
 begin
   xByteCount := Length(aBytes);
   if xByteCount = 0 then begin
-    Result := '';
+    outString := '';
     Exit;
   end;
   {$IFDEF FPC}
   //FPC
   SetLength(xUS, xByteCount div 2);
   Move(aBytes[1], xUS[1], xByteCount);
-  Result := UTF8Encode(xUS);
+  outString := UTF8Encode(xUS);
   {$ELSE}
   //DELPHI
-  SetLength(Result, xByteCount div 2);
-  Move(aBytes[1], Result[1], xByteCount);
+  SetLength(outString, xByteCount div 2);
+  Move(aBytes[1], outString[1], xByteCount);
   {$ENDIF}
 end;
 
@@ -683,17 +688,17 @@ begin
 end;
 {$ENDIF}
 
-function TUTF8Encoding.GetBytes(const S: OWideString): TEncodingBuffer;
+procedure TUTF8Encoding.StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer);
 begin
   {$IFDEF FPC}
-  Result := S;
+  outBuffer := S;
   {$ELSE}
   //DELPHI
-  Result := UTF8Encode(S);
+  outBuffer := UTF8Encode(S);
   {$ENDIF}
 end;
 
-function TUTF8Encoding.GetPreamble: TEncodingBuffer;
+function TUTF8Encoding.GetBOM: TEncodingBuffer;
 begin
   SetLength(Result, 3);
   Result[TEncodingBuffer_FirstElement+0] := #$EF;
@@ -701,13 +706,27 @@ begin
   Result[TEncodingBuffer_FirstElement+2] := #$BF;
 end;
 
-function TUTF8Encoding.GetString(const aBytes: TEncodingBuffer): OWideString;
+procedure TUTF8Encoding.BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString);
+{$IFNDEF FPC}
+var
+  xLen: Integer;
+{$ENDIF}
 begin
   {$IFDEF FPC}
-  Result := aBytes;
+  outString := aBytes;
   {$ELSE}
   //DELPHI
-  Result := UTF8Decode(aBytes);
+  //outString := UTF8Decode(aBytes);
+  xLen := Length(aBytes);
+  SetLength(outString, xLen);
+  if xLen > 0 then
+  begin
+    xLen := Utf8ToUnicode(PWideChar(outString), xLen+1, PAnsiChar(aBytes), xLen);
+    if xLen > 0 then
+      SetLength(outString, xLen-1)
+    else
+      outString := '';
+  end;
   {$ENDIF}
 end;
 
@@ -716,6 +735,72 @@ begin
   Result := False;
 end;
 {$ENDIF O_DELPHI_2009}
+
+{$IF (DEFINED(O_DELPHI_2009_UP))}
+class function TEncodingHelper.EncodingFromCodePage(aCodePage: Integer): TEncoding;
+{$ELSE}
+class function TEncoding.EncodingFromCodePage(aCodePage: Integer): TEncoding;
+{$IFEND}
+begin
+  case aCodePage of
+    CP_UNICODE: Result := Unicode;
+    {$IFDEF O_DELPHI_2009_UP}
+    CP_UNICODE_BE: Result := BigEndianUnicode;
+    CP_UTF7: Result := UTF7;
+    {$ENDIF}
+    CP_UTF8: Result := UTF8;
+  else
+    Result := TMBCSEncoding.Create(aCodePage);
+  end;
+end;
+
+{$IF (DEFINED(O_DELPHI_2009_UP))}
+class function TEncodingHelper.EncodingFromAlias(const aAlias: OWideString; var outEncoding: TEncoding): Boolean;
+{$ELSE}
+class function TEncoding.EncodingFromAlias(const aAlias: OWideString; var outEncoding: TEncoding): Boolean;
+{$IFEND}
+var
+  xCP: Cardinal;
+begin
+  xCP := AliasToCodePage(aAlias);
+  Result := (xCP <> 0);
+  if Result then
+    outEncoding := TEncoding.EncodingFromCodePage(xCP)
+  else
+    outEncoding := nil;
+end;
+
+{$IF (DEFINED(O_DELPHI_2009_UP))}
+class function TEncodingHelper.AliasToCodePage(const aAlias: OWideString): Cardinal;
+{$ELSE}
+class function TEncoding.AliasToCodePage(const aAlias: OWideString): Cardinal;
+{$IFEND}
+var
+  I: Integer;
+begin
+  for I := Low(CodePages) to High(CodePages) do
+  if SameText(aAlias, CodePages[I].CPAlias) then begin
+    Result := CodePages[I].CodePage;
+    Exit;
+  end;
+  Result := 0;
+end;
+
+{$IF (DEFINED(O_DELPHI_2009_UP))}
+class function TEncodingHelper.CodePageToAlias(const aCodePage: Cardinal): OWideString;
+{$ELSE}
+class function TEncoding.CodePageToAlias(const aCodePage: Cardinal): OWideString;
+{$IFEND}
+var
+  I: Integer;
+begin
+  for I := Low(CodePages) to High(CodePages) do
+  if aCodePage = CodePages[I].CodePage then begin
+    Result := CodePages[I].CPAlias;
+    Exit;
+  end;
+  Result := '';
+end;
 
 {$IF NOT DEFINED(FPC) AND (DEFINED(O_DELPHI_2009_UP))}
 { TEncodingHelper }
@@ -769,6 +854,22 @@ begin
   Result := IntToStr(xCodePage);
 end;
 
+class function TEncodingHelper.GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding): Integer;
+begin
+  Result := Self.GetBufferEncoding(aBuffer, outEncoding);
+end;
+
+class function TEncodingHelper.GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding;
+  aDefaultEncoding: TEncoding): Integer;
+begin
+  Result := Self.GetBufferEncoding(aBuffer, outEncoding, aDefaultEncoding);
+end;
+
+function TEncodingHelper.GetBOM: TEncodingBuffer;
+begin
+  Result := GetPreamble;
+end;
+
 function TEncodingHelper.EncodingCodePage: Cardinal;
 begin
   if Self is TMBCSEncoding then
@@ -788,57 +889,6 @@ begin
   Result := Self.FCodePage;
 end;
 {$IFEND}
-
-function GetCreateCodePage(const aCodePage: Cardinal): TEncoding;
-begin
-  case aCodePage of
-    CP_UTF8: Result := TEncoding.UTF8;
-    CP_UNICODE: Result := TEncoding.Unicode;
-  else
-    Result := TEncoding.GetEncoding(aCodePage);
-  end;
-end;
-
-function GetCreateCodePage(const aAlias: OWideString; var outEncoding: TEncoding): Boolean;
-var
-  xCP: Cardinal;
-begin
-  xCP := AliasToCodePage(aAlias);
-  Result := (xCP <> 0);
-  if Result then
-    outEncoding := GetCreateCodePage(xCP)
-  else
-    outEncoding := nil;
-end;
-
-function GetCreateCodePage(const aAlias: OWideString): TEncoding;
-begin
-  GetCreateCodePage(aAlias, {%H-}Result);
-end;
-
-function AliasToCodePage(const aAlias: OWideString): Cardinal;
-var
-  I: Integer;
-begin
-  for I := Low(CodePages) to High(CodePages) do
-  if SameText(aAlias, CodePages[I].CPAlias) then begin
-    Result := CodePages[I].CodePage;
-    Exit;
-  end;
-  Result := 0;
-end;
-
-function CodePageToAlias(const aCodePage: Cardinal): OWideString;
-var
-  I: Integer;
-begin
-  for I := Low(CodePages) to High(CodePages) do
-  if aCodePage = CodePages[I].CodePage then begin
-    Result := CodePages[I].CPAlias;
-    Exit;
-  end;
-  Result := '';
-end;
 
 {$IFNDEF O_DELPHI_2009_UP}
 initialization
