@@ -611,7 +611,8 @@ begin
 end;
 
 procedure TUnicodeEncoding.StringToBuffer(const S: OWideString; var outBuffer: TEncodingBuffer);
-var xCharCount: Integer;
+var
+  xCharCount: Integer;
   {$IFDEF FPC}
   xUS: UnicodeString;
   {$ENDIF}
@@ -707,26 +708,12 @@ begin
 end;
 
 procedure TUTF8Encoding.BufferToString(const aBytes: TEncodingBuffer; var outString: OWideString);
-{$IFNDEF FPC}
-var
-  xLen: Integer;
-{$ENDIF}
 begin
   {$IFDEF FPC}
   outString := aBytes;
   {$ELSE}
   //DELPHI
-  //outString := UTF8Decode(aBytes);
-  xLen := Length(aBytes);
-  SetLength(outString, xLen);
-  if xLen > 0 then
-  begin
-    xLen := Utf8ToUnicode(PWideChar(outString), xLen+1, PAnsiChar(aBytes), xLen);
-    if xLen > 0 then
-      SetLength(outString, xLen-1)
-    else
-      outString := '';
-  end;
+  outString := UTF8Decode(aBytes);
   {$ENDIF}
 end;
 
@@ -856,13 +843,21 @@ end;
 
 class function TEncodingHelper.GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding): Integer;
 begin
+  outEncoding := nil;//must be here: otherwise if outEncoding<>nil, GetBufferEncoding would check only towards outEncoding
   Result := Self.GetBufferEncoding(aBuffer, outEncoding);
 end;
 
 class function TEncodingHelper.GetEncodingFromBOM(const aBuffer: TEncodingBuffer; var outEncoding: TEncoding;
   aDefaultEncoding: TEncoding): Integer;
 begin
+  outEncoding := nil;//must be here: otherwise if outEncoding<>nil, GetBufferEncoding would check only towards outEncoding
+  {$IFDEF O_DELPHI_XE_UP}
   Result := Self.GetBufferEncoding(aBuffer, outEncoding, aDefaultEncoding);
+  {$ELSE}
+  Result := Self.GetBufferEncoding(aBuffer, outEncoding);
+  if Result = 0 then//BOM not found
+    outEncoding := aDefaultEncoding;
+  {$ENDIF}
 end;
 
 function TEncodingHelper.GetBOM: TEncodingBuffer;
