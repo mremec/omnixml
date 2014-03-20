@@ -336,6 +336,7 @@ type
     DecimalSeparator: AnsiChar;
     ThousandSeparator: AnsiChar;
     TimeSeparator: AnsiChar;
+    ListSeparator: AnsiChar;
     ShortDateFormat: AnsiString;
     LongDateFormat: AnsiString;
     ShortTimeFormat: AnsiString;
@@ -644,6 +645,7 @@ begin
   Result.DecimalSeparator := DecimalSeparator;
   Result.ThousandSeparator := #0;
   Result.TimeSeparator := TimeSeparator;
+  Result.ListSeparator := ListSeparator;
   Result.ShortDateFormat := ShortDateFormat;
   Result.LongDateFormat := LongDateFormat;
   Result.ShortTimeFormat := ShortTimeFormat;

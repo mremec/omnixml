@@ -88,13 +88,13 @@ type
   protected
     procedure DoCreate(const aBufferSize: Integer); virtual;
     procedure DoInit(const aNewStream: TStream; const aNewOwnsStream: Boolean;
-      const aDefaultSingleByteEncoding: TEncoding); virtual;
+      const aDefaultEncoding: TEncoding); virtual;
   public
     //create
     constructor Create(const aBufferSize: Integer = OBUFFEREDSTREAMS_DEFBUFFERSIZE); overload;
     //create and init
     constructor Create(const aStream: TStream;
-      const aDefaultSingleByteEncoding: TEncoding = nil;
+      const aDefaultEncoding: TEncoding = nil;
       const aBufferSize: Integer = OBUFFEREDSTREAMS_DEFBUFFERSIZE); overload;
 
     destructor Destroy; override;
@@ -103,16 +103,16 @@ type
     // Please note that the file/stream/... is locked until the end of the
     // document is reached or you call ReleaseDocument!
 
-    //aDefaultSingleByteEncoding - if no BOM is found, use this encoding,
-    //  if BOM is found, always correct encoding from the BOM is used
+    //aDefaultEncoding - if no BOM is found, use this encoding,
+    //  if BOM is found, always the correct encoding from the BOM is used
 
     //load document from file
     // if aForceEncoding<>nil : enforce encoding (<?xml encoding=".."?> is ignored)
-    procedure InitFile(const aFileName: String; const aDefaultSingleByteEncoding: TEncoding = nil);
+    procedure InitFile(const aFileName: String; const aDefaultEncoding: TEncoding = nil);
     //load document from file
     // if aForceEncoding = nil: in encoding specified by the document
     // if aForceEncoding<>nil : enforce encoding (<?xml encoding=".."?> is ignored)
-    procedure InitStream(const aStream: TStream; const aDefaultSingleByteEncoding: TEncoding = nil);
+    procedure InitStream(const aStream: TStream; const aDefaultEncoding: TEncoding = nil);
     //loads XML in default unicode encoding: UTF-16 for DELPHI, UTF-8 for FPC
     procedure InitString(const aString: OWideString);
     {$IFDEF O_RAWBYTESTRING}
@@ -122,7 +122,7 @@ type
     //load document from TBytes buffer
     // if aForceEncoding = nil: in encoding specified by the document
     // if aForceEncoding<>nil : enforce encoding (<?xml encoding=".."?> is ignored)
-    procedure InitBuffer(const aBuffer: TBytes; const aDefaultSingleByteEncoding: TEncoding = nil);
+    procedure InitBuffer(const aBuffer: TBytes; const aDefaultEncoding: TEncoding = nil);
     {$ENDIF}
 
     //Release the current document (that was loaded with Init*)
@@ -232,7 +232,7 @@ type
 function GetEncodingFromStream(const aStream: TStream;
   var {%H-}ioTempStringPosition: ONativeInt;
   const aLastPosition: ONativeInt;
-  const {%H-}aDefaultSingleByteEncoding: TEncoding): TEncoding;
+  const {%H-}aDefaultEncoding: TEncoding): TEncoding;
 
 implementation
 
@@ -241,22 +241,21 @@ uses
   {$IFDEF FPC}
   LazUTF8,
   {$ENDIF}
-  OXmlLNG;
+  OXmlLng;
 
 function GetEncodingFromStream(const aStream: TStream;
   var ioTempStringPosition: ONativeInt;
   const aLastPosition: ONativeInt;
-  const aDefaultSingleByteEncoding: TEncoding): TEncoding;
+  const aDefaultEncoding: TEncoding): TEncoding;
 var
   xSize: Integer;
   xBuffer: TEncodingBuffer;
   xEncoding: TEncoding;
 begin
-  //MULTI BYTE ENCODINGS MUST HAVE A BOM DEFINED!!!
-  if Assigned(aDefaultSingleByteEncoding) and aDefaultSingleByteEncoding.IsSingleByte then
-    Result := aDefaultSingleByteEncoding
+  if Assigned(aDefaultEncoding) then
+    Result := aDefaultEncoding
   else
-    Result := TEncoding.Ansi;
+    Result := TEncoding.Default;
 
   xSize := aLastPosition - aStream.Position;
   if xSize < 2 then
@@ -273,8 +272,14 @@ begin
 
   if Assigned(xEncoding) then
     Result := xEncoding;
+
   if not Assigned(Result) then
-    Result := TEncoding.{$IFDEF O_DELPHI_XE2_UP}ANSI{$ELSE}ASCII{$ENDIF};
+  begin
+    if Assigned(aDefaultEncoding) then
+      Result := aDefaultEncoding
+    else
+      Result := TEncoding.Default;
+  end;
 
   aStream.Position := ioTempStringPosition;
 end;
@@ -288,13 +293,13 @@ begin
 end;
 
 constructor TOTextReader.Create(const aStream: TStream;
-  const aDefaultSingleByteEncoding: TEncoding; const aBufferSize: Integer);
+  const aDefaultEncoding: TEncoding; const aBufferSize: Integer);
 begin
   inherited Create;
 
   DoCreate(aBufferSize);
 
-  InitStream(aStream, aDefaultSingleByteEncoding);
+  InitStream(aStream, aDefaultEncoding);
 end;
 
 constructor TOTextReader.Create(const aBufferSize: Integer);
@@ -320,7 +325,7 @@ begin
 end;
 
 procedure TOTextReader.DoInit(const aNewStream: TStream;
-  const aNewOwnsStream: Boolean; const aDefaultSingleByteEncoding: TEncoding);
+  const aNewOwnsStream: Boolean; const aDefaultEncoding: TEncoding);
 var
   xStreamPosition: Integer;
 begin
@@ -336,7 +341,7 @@ begin
   BlockFlushTempBuffer;//block because GetEncodingFromStream seeks back in stream!
   try
     xStreamPosition := fStreamPosition;
-    fEncoding := GetEncodingFromStream(fStream, fStreamPosition, fStreamSize, aDefaultSingleByteEncoding);
+    fEncoding := GetEncodingFromStream(fStream, fStreamPosition, fStreamSize, aDefaultEncoding);
     fBOMFound := (xStreamPosition < fStreamPosition);//if BOM was found, fStreamPosition increased
   finally
     UnblockFlushTempBuffer;
@@ -363,7 +368,7 @@ end;
 
 {$IFDEF O_GENERICBYTES}
 procedure TOTextReader.InitBuffer(const aBuffer: TBytes;
-  const aDefaultSingleByteEncoding: TEncoding);
+  const aDefaultEncoding: TEncoding);
 var
   xLength: Integer;
   xNewStream: TStream;
@@ -375,34 +380,34 @@ begin
     xNewStream.WriteBuffer(aBuffer[0], xLength);
   xNewStream.Position := 0;
 
-  DoInit(xNewStream, True, aDefaultSingleByteEncoding);
+  DoInit(xNewStream, True, aDefaultEncoding);
 end;
 {$ENDIF}
 
 procedure TOTextReader.InitFile(const aFileName: String;
-  const aDefaultSingleByteEncoding: TEncoding);
+  const aDefaultEncoding: TEncoding);
 begin
   DoInit(
     TFileStream.Create(aFileName, fmOpenRead or fmShareDenyNone),
     True,
-    aDefaultSingleByteEncoding);
+    aDefaultEncoding);
 end;
 
 procedure TOTextReader.InitStream(const aStream: TStream;
-  const aDefaultSingleByteEncoding: TEncoding);
+  const aDefaultEncoding: TEncoding);
 begin
   if (aStream is TCustomMemoryStream) or (aStream is TFileStream)
   then begin
     //no need for buffering on memory stream or file stream
     //  buffering is here just because some (custom) streams may not support seeking
     //  which is needed when reading encoding from xml header
-    DoInit(aStream, False, aDefaultSingleByteEncoding);
+    DoInit(aStream, False, aDefaultEncoding);
   end else begin
     //we need to buffer streams that do not support seeking (zip etc.)
     DoInit(
       TOBufferedReadStream.Create(aStream, fBufferSize),
       True,
-      aDefaultSingleByteEncoding);
+      aDefaultEncoding);
   end;
 end;
 
@@ -528,13 +533,13 @@ begin
 
   if fTempStringRemain > 0 then begin
     outChar := fTempString[fTempStringPosition];
-    case outChar of
-      #10: begin
+    case Ord(outChar) of
+      10: begin
         if fPreviousChar <> #13 then
           Inc(fLine);
         fLinePosition := 0;
       end;
-      #13: begin
+      13: begin
         fLinePosition := 0;
         Inc(fLine);
       end;
