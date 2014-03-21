@@ -33,13 +33,16 @@ requires
   dbrtl;
 
 contains
+  OXmlLng in '..\OXmlLng.pas',
+  OBufferedStreams in '..\OBufferedStreams.pas',
+  OEncoding in '..\OEncoding.pas',
+  OWideSupp in '..\OWideSupp.pas',
+  OTextReadWrite in '..\OTextReadWrite.pas',
   OmniXML_Types in '..\OmniXML_Types.pas',
   OmniXML in '..\OmniXML.pas',
   OmniXML_Dictionary in '..\OmniXML_Dictionary.pas',
   OmniXML_LookupTables in '..\OmniXML_LookupTables.pas',
   OmniXMLXPath in '..\OmniXMLXPath.pas',
-  GpTextStream in '..\GpTextStream.pas',
-  GpStreamWrapper in '..\GpStreamWrapper.pas',
   OmniXMLPersistent in '..\OmniXMLPersistent.pas',
   OmniXMLProperties in '..\OmniXMLProperties.pas',
   OmniXMLUtils in '..\OmniXMLUtils.pas',
