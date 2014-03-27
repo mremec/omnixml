@@ -3705,6 +3705,7 @@ begin
   Result := True;
   ClearChildNodes;
 
+  Stream.Position := 0;
   XTS := TXMLTextStream.Create(Stream, smRead, TEncoding.UTF8, False);
   try
     try
