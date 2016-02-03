@@ -2,15 +2,17 @@
    Based on XPath tutorial from http://www.w3schools.com/xpath/default.asp.
    @author Primoz Gabrijelcic
    @desc <pre>
-   (c) 2011 Primoz Gabrijelcic
+   (c) 2015 Primoz Gabrijelcic
    Free for personal and commercial use. No rights reserved.
 
    Author            : Primoz Gabrijelcic
    Creation date     : 2005-10-28
-   Last modification : 2011-08-30
-   Version           : 1.03
+   Last modification : 2015-07-27
+   Version           : 1.04
 </pre>*)(*
    History:
+     1.04: Improved filter processor to support consecutive filters, such as:
+           /SubtitlerStatusInfo/Status/Decoders/Item[Index="1"][Initialized="yes"][InputPresent="yes"]
      1.03: 2011-08-30
        - Added support for the '..' element.
      1.02: 2010-07-06
@@ -36,19 +38,10 @@ unit OmniXMLXPath;
 
 interface
 
-{$I OmniXML.inc}
-
-{$IFDEF OmniXML_HasZeroBasedStrings}
-  {$ZEROBASEDSTRINGS OFF}
-{$ENDIF}
-
 uses
-  {$IFDEF OmniXML_Namespaces}
-  System.SysUtils,
-  {$ELSE}
   SysUtils,
-  {$ENDIF}
-  OmniXML_Types, OmniXML;
+  OmniXML_Types,
+  OmniXML;
 
 type
   {:Exceptions raised on invalid XPath expressions.
@@ -263,8 +256,10 @@ begin
     if (element <> '') and (element[1] = '@') then
       CollectChildNodes(node, Copy(element, 2, Length(element)-1), ATTRIBUTE_NODE,
         pefScanTree in flags, tempList)
+    else if element <> '' then
+      CollectChildNodes(node, element, ELEMENT_NODE, pefScanTree in flags, tempList)
     else
-      CollectChildNodes(node, element, ELEMENT_NODE, pefScanTree in flags, tempList);
+      tempList.Add(node);
     FilterNodes(tempList, predicate, endList);
   end;
 end; { TXMLXPathEvaluator.EvaluateNode }
@@ -388,8 +383,9 @@ end; { TXMLXPathEvaluator.FilterNodes }
 function TXMLXPathEvaluator.GetNextExpressionPart(var element, predicate: XmlString;
   var flags: TXMLXPathElementFlags): boolean;
 var
-  endElement: integer;
-  pPredicate: integer;
+  endElement   : integer;
+  pEndPredicate: integer;
+  pPredicate   : integer;
 begin
   if FPosExpression > Length(FExpression) then
     Result := false
@@ -408,19 +404,23 @@ begin
     element := Copy(FExpression, FPosExpression, endElement - FPosExpression);
     FPosExpression := endElement;
     if element = '' then
-      raise EXMLXPath.CreateFmt('Empty element at position %d',
-        [FPosExpression]);
+      raise EXMLXPath.CreateFmt('Empty element at position %d', [FPosExpression]);
     pPredicate := Pos('[', element);
     if pPredicate = 0 then begin
       if Pos(']', element) > 0 then
-        raise EXMLXPath.CreateFmt('Invalid syntax at position %d',
-          [Pos(']', element)]);
+        raise EXMLXPath.CreateFmt('Invalid syntax at position %d', [Pos(']', element)]);
       predicate := '';
     end
     else begin
       if Copy(element, Length(element), 1) <> ']' then
         raise EXMLXPath.CreateFmt('Invalid syntax at position %d',
-          [FPosExpression + Length(element) - 1]);
+                [FPosExpression + Length(element) - 1]);
+      pEndPredicate := Pos(']', element);
+      if pEndPredicate < Length(element) then begin
+        //extract only the first filter
+        Dec(FPosExpression, Length(element) - pEndPredicate);
+        element := Copy(element, 1, pEndPredicate);
+      end;
       predicate := Copy(element, pPredicate+1, Length(element)-pPredicate-1);
       Delete(element, pPredicate, Length(element)-pPredicate+1);
     end;                                                                    
