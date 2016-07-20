@@ -125,7 +125,7 @@ type
     procedure EvaluatePart(startList: IXMLNodeList; const element, predicate: XmlString;
       flags: TXMLXPathElementFlags; endList: IXMLNodeList);
     procedure FilterByAttrib(startList: IXMLNodeList; const attribName, attribValue:
-      XmlString; endList: IXMLNodeList);
+      XmlString; const NotEQ: boolean; endList: IXMLNodeList);
     procedure FilterByChild(startList: IXMLNodeList; const childName,
       childValue: XmlString; endList: IXMLNodeList);
     procedure FilterNodes(startList: IXMLNodeList; const predicate: XmlString;
@@ -282,7 +282,7 @@ end; { TXMLXPathEvaluator.EvaluatePart }
   @since   2005-10-28
 }
 procedure TXMLXPathEvaluator.FilterByAttrib(startList: IXMLNodeList; const attribName,
-  attribValue: XmlString; endList: IXMLNodeList);
+  attribValue: XmlString;  const NotEQ: boolean; endList: IXMLNodeList);
 var
   attrNode     : IXMLNode;
   iNode        : integer;
@@ -291,7 +291,7 @@ begin
   matchAnyValue := (attribValue = '*');
   for iNode := 0 to startList.Length-1 do begin
     attrNode := startList.Item[iNode].Attributes.GetNamedItem(attribName);
-    if assigned(attrNode) and (matchAnyValue or (attrNode.NodeValue = attribValue)) then
+    if assigned(attrNode) and (matchAnyValue or ((attrNode.NodeValue = attribValue) xor NotEQ )) then
       endList.Add(startList.Item[iNode]);
   end;
 end; { TXMLXPathEvaluator.FilterByAttrib }
@@ -367,9 +367,9 @@ begin
     else begin
       SplitExpression(Copy(predicate, 2, Length(predicate)-1), left, op, right);
       if op = '' then // [@attrib]
-        FilterByAttrib(startList, left, '*', endList)
-      else if op = '=' then // [@attrib='x']
-        FilterByAttrib(startList, left, right, endList)
+        FilterByAttrib(startList, left, '*', false, endList)
+      else if (op = '=') or (op = '!=') then // [@attrib='x']
+        FilterByAttrib(startList, left, right, op = '!=', endList)
       else
         raise EXMLXPath.CreateFmt('Unsupported operator [%s]', [predicate]);
     end;
@@ -458,7 +458,7 @@ end; { TXMLXPathEvaluator.PosEx }
 procedure TXMLXPathEvaluator.SplitExpression(const predicate: XmlString; var left, op,
   right: XmlString);
 var
-  pOp: integer;
+  pOp, pOpLen: integer;
 begin
   pOp := Pos('=', predicate);
   if pOp = 0 then begin
@@ -467,9 +467,17 @@ begin
     right := '';
   end
   else begin
+    pOpLen := 1;
+    if pOp > 1 then  // != operator ???
+       if predicate[pOp-1] = '!' then begin
+          Inc(pOpLen);
+          Dec(pOp);
+       end;
+
     left := Trim(Copy(predicate, 1, pOp-1));
-    op := predicate[pOp];
-    right := Trim(Copy(predicate, pOp+1, Length(predicate)-pOp));
+    // op := predicate[pOp];
+    op := Copy(predicate, pOp, pOpLen);
+    right := Trim(Copy(predicate, pOp+pOpLen, Length(predicate)));
     if (right[1] = '''') and (right[Length(right)] = '''') then
       right := Copy(right, 2, Length(right)-2)
     else if (right[1] = '"') and (right[Length(right)] = '"') then
