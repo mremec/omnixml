@@ -2749,6 +2749,7 @@ begin
               InputStream.WriteOutputChar(ReadChar);
               _nodeAttr := FOwnerDocument.InternalCreateAttribute('');
               Attributes.SetNamedItem(_nodeAttr);
+              _nodeAttr.SetParentNode( Self );
               _nodeAttr.ReadFromStream(Self, InputStream);
             end
             else
