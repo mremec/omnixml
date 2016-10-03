@@ -195,10 +195,13 @@ type
       aDefaultEncoding: TEncoding): Integer; overload;
     function GetBOM: TEncodingBuffer;
   end;
+  {$IF NOT DEFINED(O_DELPHI_XE2_UP)}
   TMBCSEncodingHelper = class helper for TMBCSEncoding
   public
     function GetCodePage: Cardinal;
+    property CodePage: Cardinal read GetCodePage;
   end;
+  {$IFEND}
 {$IFEND}
 
 implementation
@@ -868,7 +871,7 @@ end;
 function TEncodingHelper.EncodingCodePage: Cardinal;
 begin
   if Self is TMBCSEncoding then
-    Result := TMBCSEncoding(Self).GetCodePage
+    Result := TMBCSEncoding(Self).CodePage
   else if Self is TUnicodeEncoding then
     Result := CP_UNICODE
   else if Self is TBigEndianUnicodeEncoding then
@@ -877,12 +880,13 @@ begin
     Result := 0;
 end;
 
+{$IF NOT DEFINED(O_DELPHI_XE2_UP)}
 { TMBCSEncodingHelper }
-
 function TMBCSEncodingHelper.GetCodePage: Cardinal;
 begin
   Result := Self.FCodePage;
 end;
+  {$IFEND}
 {$IFEND}
 
 {$IFNDEF O_DELPHI_2009_UP}
