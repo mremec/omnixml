@@ -390,6 +390,9 @@ type
     function HasChildNodes: Boolean;
     function CloneNode(const Deep: Boolean): IXMLNode;
 
+    procedure SetCachedSiblings(const PrevOne, NextOne: iXMLNode);
+    procedure SetNoCachedSiblings;
+
     property NodeName: XmlString read GetNodeName;
     property NodeValue: XmlString read GetNodeValue write SetNodeValue;
     property NodeType: TNodeType read GetNodeType;
@@ -420,6 +423,7 @@ type
     // protected
     function GetLength: Integer;
     function GetItem(const Index: Integer): IXMLNode;
+    procedure MakeChildrenCacheSiblings(const Value: boolean);
     // public
     property Item[const Index: Integer]: IXMLNode read GetItem;
     property Length: Integer read GetLength;
@@ -644,6 +648,8 @@ type
     FChildNodes: IXMLNodeList;
     FParentNode: IXMLNode;
     FNodeValueId: TDicId;
+    FCachingIndex: boolean;
+
     procedure ClearChildNodes;
     function HasAttributes: Boolean;
     function GetAttributes: IXMLNamedNodeMap;
@@ -666,6 +672,9 @@ type
     function GetXML: XmlString;
     procedure SelectNodes(Pattern: string; var Result: IXMLNodeList); overload; virtual;
     procedure SelectSingleNode(Pattern: string; var Result: IXMLNode); overload; virtual;
+
+    procedure SetCachedSiblings(const PrevOne, NextOne: iXMLNode);
+    procedure SetNoCachedSiblings;
   public
     Dictionary: TDictionary;
     property NodeName: XmlString read GetNodeName;
@@ -725,10 +734,13 @@ type
     {$ELSE}
     FList: TList;
     {$ENDIF}
+    FChildrenCachedSiblings: boolean;
   protected
     function GetLength: Integer;
     function GetItem(const Index: Integer): IXMLNode;
     procedure Put(Index: Integer; Item: IXMLNode);
+
+    procedure MakeChildrenCacheSiblings(const Value: boolean);
   public
     constructor Create;
     destructor Destroy; override;
@@ -1962,20 +1974,76 @@ end;
 
 { TXMLCustomList }
 
+type TNotifyingList = class({$IFDEF OmniXML_Generics}TList<IXMLNode>{$Else}TList{$EndIf})
+   private
+     Owner: TXMLCustomList;
+   protected
+{$IfDef OmniXML_Generics}
+     procedure Notify(const Item: IXMLNode; Action: TCollectionNotification); override;
+{$Else}
+     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+{$EndIf}
+end;
+
+{$IFDEF OmniXML_Generics}
+procedure TNotifyingList.Notify(const Item: IXMLNode; Action: TCollectionNotification);
+{$Else}
+procedure TNotifyingList.Notify(Ptr: Pointer; Action: TListNotification);
+{$EndIf}
+begin
+  // for preformance reasons we would not call inherited function here
+  // 1) non-generic TList.Notify is empty anywhere
+  // 2) generic TList<T>.Notify merely checks event property and possibly calls
+  //         it, which implies extra redirection and AddRef/Release calls
+  //         And yet again, we do not use that event.
+
+  if Count > 0 then
+     if Owner <> nil then
+        if Owner.FChildrenCachedSiblings then
+           Owner.MakeChildrenCacheSiblings( False );
+end;
+
 constructor TXMLCustomList.Create;
 begin
-  {$IFDEF OmniXML_Generics}
-  FList := TList<IXMLNode>.Create;
-  {$ELSE}
-  FList := TList.Create;
-  {$ENDIF}
+  FList := TNotifyingList.Create;
+  TNotifyingList(FList).Owner := Self;
 end;
 
 destructor TXMLCustomList.Destroy;
 begin
+  if GetLength > 0 then
+     MakeChildrenCacheSiblings(False);
+  if FList <> nil then
+     (FList as TNotifyingList).Owner := nil;
   Clear;
   FList.Free;
   inherited;
+end;
+
+procedure TXMLCustomList.MakeChildrenCacheSiblings(const Value: boolean);
+var i, l: integer;
+    iNext, iPrev, iCurr: IXMLNode;
+begin
+  if Value then begin
+    L := GetLength();
+    if L > 0 then begin
+       i := 0;
+       iNext := GetItem(0);
+       while iNext <> nil do begin
+         iPrev := iCurr;
+         iCurr := iNext;
+         Inc(i);
+         if i < L
+            then iNext := GetItem( i )
+            else iNext := nil;
+         iCurr.SetCachedSiblings(iPrev, iNext);
+       end;
+    end;
+  end else begin
+    for i := 0 to GetLength - 1 do
+      GetItem(i).SetNoCachedSiblings;
+  end;
+  FChildrenCachedSiblings := Value;
 end;
 
 function TXMLCustomList.GetItem(const Index: Integer): IXMLNode;
@@ -2145,6 +2213,7 @@ end;
 
 destructor TXMLNode.Destroy;
 begin
+  SetNoCachedSiblings;
   FAttributes := nil;
   FChildNodes := nil;
   Pointer(FParentNode) := nil;  // (gp)
@@ -2282,44 +2351,60 @@ begin
 end;
 
 function TXMLNode.GetPreviousSibling: IXMLNode;
-  function FindPreviousNode(const Self: IXMLNode): IXMLNode;
-  var
-    Childs: IXMLNodeList;
-    Index: Integer;
-  begin
-    Childs := FParentNode.ChildNodes;
-    Index := Childs.IndexOf(Self);
-    if (Index >= 0) and ((Index - 1) >= 0) then
-      Result := Childs.Item[Index - 1]
-    else
-      Result := nil;
-  end;
 begin
-  if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
-    Result := FindPreviousNode(Self as IXMLNode)
-  else
-    Result := nil;
+  if not FCachingSiblings then
+     if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
+        FParentNode.ChildNodes.MakeChildrenCacheSiblings(True);
+  Result := FSibPrev;
 end;
 
 function TXMLNode.GetNextSibling: IXMLNode;
-  function FindNextNode(const Self: IXMLNode): IXMLNode;
-  var
-    Childs: IXMLNodeList;
-    Index: Integer;
-  begin
-    Childs := FParentNode.ChildNodes;
-    Index := Childs.IndexOf(Self);
-    if (Index >= 0) and ((Index + 1) < Childs.Length) then
-      Result := Childs.Item[Index + 1]
-    else
-      Result := nil;
-  end;
 begin
-  if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
-    Result := FindNextNode(Self as IXMLNode)
-  else
-    Result := nil;
+  if not FCachingSiblings then
+     if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
+        FParentNode.ChildNodes.MakeChildrenCacheSiblings(True);
+  Result := FSibNext;
 end;
+
+//function TXMLNode.GetPreviousSibling: IXMLNode;
+//  function FindPreviousNode(const Self: IXMLNode): IXMLNode;
+//  var
+//    Childs: IXMLNodeList;
+//    Index: Integer;
+//  begin
+//    Childs := FParentNode.ChildNodes;
+//    Index := Childs.IndexOf(Self);
+//    if (Index >= 0) and ((Index - 1) >= 0) then
+//      Result := Childs.Item[Index - 1]
+//    else
+//      Result := nil;
+//  end;
+//begin
+//  if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
+//    Result := FindPreviousNode(Self as IXMLNode)
+//  else
+//    Result := nil;
+//end;
+//
+//function TXMLNode.GetNextSibling: IXMLNode;
+//  function FindNextNode(const Self: IXMLNode): IXMLNode;
+//  var
+//    Childs: IXMLNodeList;
+//    Index: Integer;
+//  begin
+//    Childs := FParentNode.ChildNodes;
+//    Index := Childs.IndexOf(Self);
+//    if (Index >= 0) and ((Index + 1) < Childs.Length) then
+//      Result := Childs.Item[Index + 1]
+//    else
+//      Result := nil;
+//  end;
+//begin
+//  if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
+//    Result := FindNextNode(Self as IXMLNode)
+//  else
+//    Result := nil;
+//end;
 
 function TXMLNode.HasChildNodes: Boolean;
 begin
@@ -2524,6 +2609,22 @@ function TXMLNode.SelectSingleNode(Pattern: string): IXMLNode;
 begin
   SelectSingleNode(Pattern, Result);
 end;
+
+procedure TXMLNode.SetCachedSiblings(const PrevOne, NextOne: iXMLNode);
+begin
+  FSibPrev := PrevOne;
+  FSibNext := NextOne;
+  FCachingSiblings := True;
+end;
+
+procedure TXMLNode.SetNoCachedSiblings;
+begin
+  FCachingSiblings := False;
+  FSibNext := nil;
+  FSibPrev := nil;
+end;
+
+
 
 { TODO -omr : re-add after IXMLDocumentType will be properly supported }
 (*
