@@ -390,8 +390,7 @@ type
     function HasChildNodes: Boolean;
     function CloneNode(const Deep: Boolean): IXMLNode;
 
-    procedure SetCachedSiblings(const PrevOne, NextOne: iXMLNode);
-    procedure SetNoCachedSiblings;
+    procedure SetCachedNodeIndex(const Index: integer);
 
     property NodeName: XmlString read GetNodeName;
     property NodeValue: XmlString read GetNodeValue write SetNodeValue;
@@ -648,7 +647,7 @@ type
     FChildNodes: IXMLNodeList;
     FParentNode: IXMLNode;
     FNodeValueId: TDicId;
-    FCachingIndex: boolean;
+    FCachedNodeIndex:  integer;  // < 0 if non-cached hence unknown
 
     procedure ClearChildNodes;
     function HasAttributes: Boolean;
@@ -673,8 +672,7 @@ type
     procedure SelectNodes(Pattern: string; var Result: IXMLNodeList); overload; virtual;
     procedure SelectSingleNode(Pattern: string; var Result: IXMLNode); overload; virtual;
 
-    procedure SetCachedSiblings(const PrevOne, NextOne: iXMLNode);
-    procedure SetNoCachedSiblings;
+    procedure SetCachedNodeIndex(const Index: integer);
   public
     Dictionary: TDictionary;
     property NodeName: XmlString read GetNodeName;
@@ -2022,27 +2020,12 @@ end;
 
 procedure TXMLCustomList.MakeChildrenCacheSiblings(const Value: boolean);
 var i, l: integer;
-    iNext, iPrev, iCurr: IXMLNode;
 begin
-  if Value then begin
-    L := GetLength();
-    if L > 0 then begin
-       i := 0;
-       iNext := GetItem(0);
-       while iNext <> nil do begin
-         iPrev := iCurr;
-         iCurr := iNext;
-         Inc(i);
-         if i < L
-            then iNext := GetItem( i )
-            else iNext := nil;
-         iCurr.SetCachedSiblings(iPrev, iNext);
-       end;
-    end;
-  end else begin
-    for i := 0 to GetLength - 1 do
-      GetItem(i).SetNoCachedSiblings;
-  end;
+  if Value
+     then l := 0   // all bits clear
+     else l := -1; // all bits set!
+  for i := 0 to GetLength - 1 do
+      GetItem(i).SetCachedNodeIndex( i or l );
   FChildrenCachedSiblings := Value;
 end;
 
@@ -2207,13 +2190,13 @@ begin
   FChildNodes := nil;
   FAttributes := nil;
   FNodeValueId := CInvalidDicId;
+  FCachedNodeIndex := -1;
 
   Dictionary := FOwnerDocument.Dictionary;
 end;
 
 destructor TXMLNode.Destroy;
 begin
-  SetNoCachedSiblings;
   FAttributes := nil;
   FChildNodes := nil;
   Pointer(FParentNode) := nil;  // (gp)
@@ -2351,19 +2334,32 @@ begin
 end;
 
 function TXMLNode.GetPreviousSibling: IXMLNode;
+var ns: IXMLNodeList;
 begin
-  if not FCachingSiblings then
-     if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
-        FParentNode.ChildNodes.MakeChildrenCacheSiblings(True);
-  Result := FSibPrev;
+  Result := nil;
+  if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
+  begin
+    ns := FParentNode.ChildNodes;
+    if FCachedNodeIndex < 0 then
+          ns.MakeChildrenCacheSiblings(True);
+    if FCachedNodeIndex > 0 then
+       Result := ns.Item[FCachedNodeIndex-1];
+  end;
 end;
 
 function TXMLNode.GetNextSibling: IXMLNode;
+var ns: IXMLNodeList; next_id: integer;
 begin
-  if not FCachingSiblings then
-     if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
-        FParentNode.ChildNodes.MakeChildrenCacheSiblings(True);
-  Result := FSibNext;
+  Result := nil;
+  if (FParentNode <> nil) and (FParentNode.HasChildNodes) then
+  begin
+    ns := FParentNode.ChildNodes;
+    if FCachedNodeIndex < 0 then
+          ns.MakeChildrenCacheSiblings(True);
+    next_id := FCachedNodeIndex + 1;
+    if next_id < ns.Length then
+       Result := ns.Item[next_id];
+  end;
 end;
 
 //function TXMLNode.GetPreviousSibling: IXMLNode;
@@ -2610,21 +2606,12 @@ begin
   SelectSingleNode(Pattern, Result);
 end;
 
-procedure TXMLNode.SetCachedSiblings(const PrevOne, NextOne: iXMLNode);
+procedure TXMLNode.SetCachedNodeIndex(const Index: integer);
 begin
-  FSibPrev := PrevOne;
-  FSibNext := NextOne;
-  FCachingSiblings := True;
+  if Index >= 0
+     then FCachedNodeIndex := Index
+     else FCachedNodeIndex := -1;
 end;
-
-procedure TXMLNode.SetNoCachedSiblings;
-begin
-  FCachingSiblings := False;
-  FSibNext := nil;
-  FSibPrev := nil;
-end;
-
-
 
 { TODO -omr : re-add after IXMLDocumentType will be properly supported }
 (*
