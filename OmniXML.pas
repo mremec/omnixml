@@ -641,7 +641,7 @@ type
 
   TXMLNode = class(TInterfacedObject, IXMLNode)
   protected
-    FOwnerDocument: TXMLDocument;
+    {$IFDEF AUTOREFCOUNT} [weak] {$ENDIF} FOwnerDocument: TXMLDocument;
     FNodeType: TNodeType;
     FAttributes: IXMLNamedNodeMap;
     FChildNodes: IXMLNodeList;
