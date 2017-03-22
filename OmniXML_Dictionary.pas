@@ -49,6 +49,7 @@ type
     {$ENDIF}
     FTextList: TStringList;
     FMaxItemsBeforeResize: Integer;
+    FLastHashSize: Integer;
     procedure Resize;
   public
     constructor Create; reintroduce;
@@ -171,7 +172,8 @@ var
 begin
   FHashTable.Free;
 
-  HashSize := GetGoodHashSize(FTextList.Count);
+  HashSize := GetGoodHashSize(FLastHashSize+1);
+  FLastHashSize := HashSize;
 
   {$IFDEF FPC}
   FHashTable := TFPHashList.Create;
