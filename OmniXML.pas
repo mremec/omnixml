@@ -1974,7 +1974,7 @@ end;
 
 type TNotifyingList = class({$IFDEF OmniXML_Generics}TList<IXMLNode>{$Else}TList{$EndIf})
    private
-     Owner: TXMLCustomList;
+     {$IFDEF AUTOREFCOUNT} [weak] {$ENDIF} Owner: TXMLCustomList;
    protected
 {$IfDef OmniXML_Generics}
      procedure Notify(const Item: IXMLNode; Action: TCollectionNotification); override;
