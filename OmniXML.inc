@@ -2,6 +2,8 @@
   {$DEFINE UNICODE}
 {$ENDIF}
 
+{$DEFINE OmniXML_SupportAnsiStrings}
+
 {$IFDEF CONDITIONALEXPRESSIONS}
 
   {$IF Declared(CompilerVersion) and (CompilerVersion >= 25.0)}
@@ -32,6 +34,10 @@
   {$IFDEF UNICODE}  // Delphi with Unicode support
     {$DEFINE OmniXML_Unicode}
   {$ENDIF}  // UNICODE
+
+  {$IFDEF NEXTGEN}
+    {$UNDEF OmniXML_SupportAnsiStrings}
+  {$ENDIF NEXTGEN}
 
 {$ENDIF}  // CONDITIONALEXPRESSIONS
 

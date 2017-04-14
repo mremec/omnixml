@@ -154,6 +154,10 @@ interface
   {$IFEND}
 {$ENDIF}
 
+{$IFDEF NEXTGEN}
+  {$DEFINE NoVCL}
+{$ENDIF NEXTGEN}
+
 uses
 {$IFDEF MSWINDOWS}
   Windows,
@@ -497,21 +501,25 @@ type
   function XMLLoadFromString(xmlDocument: IXMLDocument;
     const xmlData: XmlString): boolean;
 
+ {$IFDEF OmniXML_SupportAnsiStrings}
   {:Load XML document from an ansi string.
   }
   function XMLLoadFromAnsiString(xmlDocument: IXMLDocument;
     const xmlData: AnsiString): boolean;
+ {$ENDIF OmniXML_SupportAnsiStrings}
 
   {:Save XML document to a wide string.
   }
   function XMLSaveToString(xmlDocument: IXMLDocument;
     outputFormat: TOutputFormat = ofNone): XmlString;
 
+ {$IFDEF OmniXML_SupportAnsiStrings}
   {:Save XML document to an ansi string, automatically adding UTF8 processing
     instruction if required.
   }
   function XMLSaveToAnsiString(xmlDocument: IXMLDocument;
     outputFormat: TOutputFormat = ofNone): AnsiString;
+ {$ENDIF OmniXML_SupportAnsiStrings}
 
   {:Load XML document from a stream.
   }
@@ -2496,6 +2504,7 @@ begin
   Result := xmlDocument.LoadXML(xmlData);
 end; { XMLLoadFromString }
 
+{$IFDEF OmniXML_SupportAnsiStrings}
 {:@param   xmlDocument XML document.
   @param   xmlData     XML document, stored in the string.
   @returns True if xmlData was successfully parsed and loaded into the
@@ -2512,6 +2521,7 @@ begin
     Result := XMLLoadFromStream(xmlDocument, sStr);
   finally FreeAndNil(sStr); end;
 end; { XMLLoadFromString }
+{$ENDIF OmniXML_SupportAnsiStrings}
 
 {:@param   xmlDocument  XML document.
   @param   outputFormat XML document formatting.
@@ -2545,6 +2555,7 @@ begin
 {$ENDIF USE_MSXML}
 end; { XMLSaveToString }
 
+{$IFDEF OmniXML_SupportAnsiStrings}
 {:@param   xmlDocument  XML document.
   @param   outputFormat XML document formatting.
   @returns Contents of the XML document, stored in the string.
@@ -2561,6 +2572,7 @@ begin
     Result := AnsiString(sStr.DataString);
   finally FreeAndNil(sStr); end;
 end; { XMLSaveToString }
+{$ENDIF OmniXML_SupportAnsiStrings}
 
 {:@param   xmlDocument XML document.
   @param   xmlStream   Stream containing XML document.
