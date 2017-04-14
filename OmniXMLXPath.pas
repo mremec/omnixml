@@ -38,10 +38,19 @@ unit OmniXMLXPath;
 
 interface
 
+{$I OmniXML.inc}
+
+{$IFDEF OmniXML_HasZeroBasedStrings}
+  {$ZEROBASEDSTRINGS OFF}
+{$ENDIF}
+
 uses
+  {$IFDEF OmniXML_Namespaces}
+  System.SysUtils,
+  {$ELSE}
   SysUtils,
-  OmniXML_Types,
-  OmniXML;
+  {$ENDIF}
+  OmniXML_Types, OmniXML;
 
 type
   {:Exceptions raised on invalid XPath expressions.
