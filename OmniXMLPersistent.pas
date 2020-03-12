@@ -360,8 +360,7 @@ begin
       tkInteger, tkChar, tkWChar, tkEnumeration, tkSet: WriteOrdProp;
       tkString, tkLString, tkWString {$IFDEF UNICODE}, tkUString {$ENDIF}: WriteStrProp;
       tkFloat:
-        if (PropType = System.TypeInfo(TDateTime)) or (PropType = System.TypeInfo(TTime))
-          or (PropType = System.TypeInfo(TDate)) then
+        if (PropType = System.TypeInfo(TDateTime)) then
             WriteDateTimeProp
         else
           WriteFloatProp;
@@ -726,8 +725,7 @@ begin
       tkInteger, tkChar, tkWChar, tkEnumeration, tkSet: ReadOrdProp;
       tkString, tkLString, tkWString {$IFDEF UNICODE}, tkUString {$ENDIF}: ReadStrProp;
       tkFloat:
-        if (PropType = System.TypeInfo(TDateTime)) or (PropType = System.TypeInfo(TTime))
-          or (PropType = System.TypeInfo(TDate)) then
+        if (PropType = System.TypeInfo(TDateTime)) then
             ReadDateTimeProp
         else
           ReadFloatProp;
