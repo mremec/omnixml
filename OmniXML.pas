@@ -3309,7 +3309,7 @@ procedure TXMLCDATASection.ReadFromStream(const Parent: TXMLNode; const InputStr
 type
   TParserState = (psData, psInEnd, psEnd);
 var
-  ReadChar: WideChar;
+  ReadChar: XmlChar;
   PState: TParserState;
 begin
   PState := psData;
