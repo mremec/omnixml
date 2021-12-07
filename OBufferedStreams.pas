@@ -193,7 +193,7 @@ begin
 end;
 {$ENDIF}
 
-function TOBufferedWriteStream.Seek(Offset: Integer; Origin: Word): LongInt;
+function TOBufferedWriteStream.Seek(Offset: LongInt; Origin: Word): LongInt;
 begin
   if (Origin = soFromCurrent) and (Offset = 0) then begin
     Result := fStreamPosition + fTempBufferUsedLength;
@@ -335,7 +335,7 @@ begin
   {$ENDIF}
 end;
 
-function TOBufferedReadStream.Seek(Offset: Integer; Origin: Word): LongInt;
+function TOBufferedReadStream.Seek(Offset: LongInt; Origin: Word): LongInt;
 var
   xAbsolutePosition: ONativeInt;
 begin
