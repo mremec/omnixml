@@ -10,6 +10,11 @@
    Version           : 1.03
 </pre>*)(*
    History:
+     1.04: 2022-05-18
+       - Fixed a bug in XMLNodeToDatasetRow and DatasetRowToXMLNode that
+         occurs when .Fields and .FieldDefs collections of TDataSet have 
+         different member count and type. A typical case is when calculated
+         or lookup fields are created only in FieldDefs collection.
      1.03: 2003-03-31
        - Added methods DatasetToXMLFile, DatasetToXMLString, XMLFileToDataset,
          XMLStringToDataset.
@@ -207,9 +212,9 @@ begin
     notExport := ';' + doNotExport + ';';
   DeleteAllChildren(dsNode);
   for iField := 0 to ds.FieldDefs.Count-1 do begin
-    if faHiddenCol in ds.fielddefs[iField].Attributes then
+    if faHiddenCol in ds.FieldDefs[iField].Attributes then
       continue;
-    field := ds.Fields[iField];
+    field := ds.FieldByName(ds.FieldDefs[iField].Name);
     fieldClass := ds.FieldDefs[iField].FieldClass;
     if (notExport = '') or (Pos(';'+field.FieldName+';', notExport) = 0) then begin
       nodeName := CleanupNodeName(field.FieldName);
@@ -382,7 +387,7 @@ procedure XMLNodeToDatasetRow(dsNode: IXMLNode; ds: TDataSet;
   const doNotImport: string; options: TOmniXMLDatabaseOptions);
 var
   field       : TField;
-  fieldClass  : TFieldClass;
+  fieldClass  : TClass;
   fieldElement: IXMLElement;
   fieldNode   : IXMLNode;
   memStr      : TMemoryStream;
@@ -430,7 +435,7 @@ begin { XMLNodeToDatasetRow }
              (fieldElement.GetAttribute(CXMLFieldIsEmpty) <> XMLBoolToStr(true)) then
           begin
             nodeData := fieldNode.Text;
-            fieldClass := ds.FieldDefs[field.Index].FieldClass;
+            fieldClass := ds.Fields[field.Index].ClassType;
             if fieldClass.InheritsFrom(TStringField) then
               field.AsString := nodeData
             // check for TAutoIncField must be before TIntegerField
