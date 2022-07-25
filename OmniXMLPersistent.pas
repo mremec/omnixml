@@ -646,7 +646,7 @@ var
         tkEnumeration:
           begin
             if PropType = System.TypeInfo(Boolean) then begin
-              if XMLStrToBool(Value, BoolValue) then
+              if XMLStrToBool(LowerCase(Value), BoolValue) then
                 SetOrdProp(Instance, PropInfo, Ord(BoolValue))
               else
                 raise EOmniXMLPersistent.CreateFmt('Invalid boolean value (%s).', [Value]);
