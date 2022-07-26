@@ -253,7 +253,7 @@ var
     else
       Value := GetStrProp(Instance, PropInfo);
 
-    if Value <> '' then
+    if (Value <> EmptyStr) or (WriteDefaultValues) then
       InternalWriteText(Element, XmlString(PPropInfo(PropInfo)^.Name), Value);
   end;
 
@@ -262,7 +262,7 @@ var
     Value: Longint;
   begin
     Value := GetOrdProp(Instance, PropInfo);
-    if WriteDefaultValues or (Value <> PPropInfo(PropInfo)^.Default) then begin
+    if (WriteDefaultValues) or (Value <> PPropInfo(PropInfo)^.Default) then begin
       case PropType^.Kind of
         tkInteger: InternalWriteText(Element, XmlString(PPropInfo(PropInfo)^.Name), XMLIntToStr(Value));
         tkChar:
@@ -295,7 +295,7 @@ var
     Value: Real;
   begin
     Value := GetFloatProp(Instance, PropInfo);
-    if Value <> 0 then
+    if (Value <> 0) or (WriteDefaultValues) then
       InternalWriteText(Element, XmlString(PPropInfo(PropInfo)^.Name), XMLRealToStr(Value));
   end;
 
@@ -304,7 +304,7 @@ var
     Value: TDateTime;
   begin
     Value := VarAsType(GetFloatProp(Instance, PropInfo), varDate);
-    if Value <> 0 then
+    if (Value <> 0) or (WriteDefaultValues) then
       InternalWriteText(Element, XmlString(PPropInfo(PropInfo)^.Name), XMLDateTimeToStrEx(Value));
   end;
 
@@ -313,7 +313,7 @@ var
     Value: Int64;
   begin
     Value := GetInt64Prop(Instance, PropInfo);
-    if Value <> 0 then
+    if (Value <> 0) or (WriteDefaultValues) then
       InternalWriteText(Element, XmlString(PPropInfo(PropInfo)^.Name), XMLInt64ToStr(Value));
   end;
 
