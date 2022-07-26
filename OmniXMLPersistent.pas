@@ -111,6 +111,7 @@ procedure CreateDocument(var XMLDoc: IXMLDocument; var Root: IXMLElement;
   RootNodeName: XmlString);
 begin
   XMLDoc := CreateXMLDoc;
+  XMLDoc.AppendChild(XMLDoc.CreateProcessingInstruction('xml', 'version="1.0" encoding="utf-8"'));
   Root := XMLDoc.CreateElement(RootNodeName);
   XMLDoc.DocumentElement := Root;
 end;
