@@ -486,9 +486,6 @@ end;
 
 constructor TOmniXMLReader.Create(const PropFormat: TPropsFormat = pfAuto);
 begin
-  if PropFormat = pfAuto then
-    raise EOmniXMLPersistent.Create('Auto PropFormat not allowed here.');
-
   PropsFormat := PropFormat;
 end;
 
@@ -510,25 +507,32 @@ begin
 end;
 
 function TOmniXMLReader.InternalReadText(Root: IXMLElement; Name: XmlString; var Value: XmlString): Boolean;
-var
-  PropNode: IXMLElement;
-  AttrNode: IXMLNode;
+
+  function ReadNodes: Boolean;
+  var
+    PropNode: IXMLElement;
+  begin
+    PropNode := FindElement(Root, Name);
+    Result := PropNode <> nil;
+    if Result then
+      Value := PropNode.Text;
+  end;
+
+  function ReadAttributes: Boolean;
+  var
+    AttrNode: IXMLNode;
+  begin
+    AttrNode := Root.Attributes.GetNamedItem(Name);
+    Result := AttrNode <> nil;
+    if Result then
+      Value := AttrNode.NodeValue;
+  end;
+
 begin
   case PropsFormat of
-    pfAttributes:
-      begin
-        AttrNode := Root.Attributes.GetNamedItem(Name);
-        Result := AttrNode <> nil;
-        if Result then
-          Value := AttrNode.NodeValue;
-      end;
-    pfNodes:
-      begin
-        PropNode := FindElement(Root, Name);
-        Result := PropNode <> nil;
-        if Result then
-          Value := PropNode.Text;
-      end;
+    pfAttributes: Result := ReadAttributes();
+    pfNodes: Result := ReadNodes();
+    pfAuto:  Result := (ReadNodes() or ReadAttributes)
     else
       Result := False;
   end;
