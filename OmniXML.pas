@@ -3339,11 +3339,14 @@ begin
         end
         else
         begin
-          InputStream.WriteOutputChar(ReadChar);
+          InputStream.WriteOutputChar(']');
           if ReadChar = ']' then
             PState := psEnd
-          else
+          else begin
+            InputStream.WriteOutputChar(']');
+            InputStream.WriteOutputChar(ReadChar);
             PState := psData;
+          end;
         end;
     end;
   end;
